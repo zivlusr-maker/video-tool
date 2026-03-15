@@ -514,7 +514,8 @@ async function callGemini(claudeBody) {
     try {
       r = await fetch('/api/claude', {method:'POST',headers:{'Content-Type':'application/json'},
         body: JSON.stringify({__gemini:true, model:modelName, body:geminiBody})});
-      if (r.status === 503) proxyOk = false;
+      // 503=Key미설정, 400/401/404/405=구버전api.js
+      if (r.status === 503 || r.status === 400 || r.status === 401 || r.status === 404 || r.status === 405) proxyOk = false;
     } catch(e) { proxyOk = false; }
     // 代理没有GOOGLE_API_KEY，降级直连（用本地Key）
     if (!proxyOk) {
@@ -904,9 +905,15 @@ function saveGeminiKeyFromBanner() {
 // ==================== INIT ====================
 // 检查API代理是否可用，不可用则提示配置Key
 fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({__ping:true})})
-  .then(r=>{if(r.status===503||!r.ok)throw new Error('no proxy');return r.json();})
+  .then(async r=>{
+    if(!r.ok) throw new Error('proxy error '+r.status);
+    const d=await r.json();
+    if(d.ok) console.log('✅ 服务端代理正常');
+    return d;
+  })
   .catch(()=>{
-    if(!getAKey()){
+    // 代理不可用时，只有在没有本地Key的情况下才弹出Key输入框
+    if(!getAKey()&&!getGeminiKey()){
       setTimeout(()=>{
         document.getElementById('keyBanner').style.display='block';
         document.getElementById('keyBtn').style.display='flex';
