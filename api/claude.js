@@ -5,22 +5,26 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // 健康检查
   if (req.body && req.body.__ping) return res.status(200).json({ ok: true });
 
   const gKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
-  // Veo 视频生成
+  // Veo 视频生成 (predictLongRunning)
   if (req.body && req.body.__veo) {
     if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
     const { model, body: veoBody } = req.body;
     try {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateVideos?key=${gKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:predictLongRunning?key=${gKey}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veoBody) }
       );
-      const d = await r.json();
-      return res.status(r.status).json(d);
+      const text = await r.text();
+      if (!text) return res.status(200).json({ error: 'Empty response from Veo API' });
+      try {
+        return res.status(r.status).json(JSON.parse(text));
+      } catch(e) {
+        return res.status(200).json({ error: 'Veo response parse error: ' + text.substring(0, 200) });
+      }
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -34,8 +38,13 @@ export default async function handler(req, res) {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/${opName}?key=${gKey}`
       );
-      const d = await r.json();
-      return res.status(r.status).json(d);
+      const text = await r.text();
+      if (!text) return res.status(200).json({ done: false });
+      try {
+        return res.status(r.status).json(JSON.parse(text));
+      } catch(e) {
+        return res.status(200).json({ error: 'Poll parse error: ' + text.substring(0, 200) });
+      }
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
