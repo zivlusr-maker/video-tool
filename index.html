@@ -492,16 +492,24 @@ async function callGemini(claudeBody) {
     }
   }
 
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent?key=${gKey}`,
-    {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.3}})
-    }
-  );
-  const d = await r.json();
-  if (!r.ok || d.error) throw new Error(d.error?.message || 'Gemini API error');
+  // 尝试 2.5 pro，失败降级到 1.5 pro
+  const models = ['gemini-2.5-pro-preview-03-25','gemini-2.0-flash','gemini-1.5-pro'];
+  let d = null, lastErr = '';
+  for (const modelName of models) {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${gKey}`,
+      {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.3,maxOutputTokens:2000}})
+      }
+    );
+    d = await r.json();
+    if (r.ok && !d.error) break;
+    lastErr = d.error?.message || `${modelName} error ${r.status}`;
+    d = null;
+  }
+  if (!d) throw new Error('Gemini error: ' + lastErr);
 
   // 转成 Claude 响应格式（让下游代码统一处理）
   const text = d.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
@@ -577,7 +585,10 @@ async function startAnalysis(file){
     const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content}]});
     const txt=data.content?.[0]?.text||'';
     const clean=txt.replace(/```json\n?|```/g,'').trim();
-    result=JSON.parse(clean.substring(clean.indexOf('{')));
+    const jsonStart=clean.indexOf('{');
+    const jsonEnd=clean.lastIndexOf('}')+1;
+    if(jsonStart===-1||jsonEnd===0)throw new Error('No JSON in response: '+clean.substring(0,200));
+    result=JSON.parse(clean.substring(jsonStart,jsonEnd));
   }catch(e){
     console.warn('AI fallback:',e.message);
     if(e.message==='NO_KEY'){
@@ -673,7 +684,9 @@ async function genScript(){
     const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:`你是顶级短视频脚本策划师。\n【原视频结构】${struct}\n【产品】${name}\n【卖点】${points||'请根据产品名推测'}\n【用户】${audience||'普通消费者'}\n基于原视频爆款结构为产品生成改编脚本。严格JSON：\n{"title":"脚本标题","shots":[{"id":1,"type":"镜头类型","duration":5.0,"description":"画面描述2-3句","copywriting":"口播文案"}]}`}]});
     const txt=data.content?.[0]?.text||'';
     const clean=txt.replace(/```json\n?|```/g,'').trim();
-    renderAI(JSON.parse(clean.substring(clean.indexOf('{'))));
+    const jStart=clean.indexOf('{'),jEnd=clean.lastIndexOf('}')+1;
+    if(jStart===-1)throw new Error('No JSON');
+    renderAI(JSON.parse(clean.substring(jStart,jEnd)));
   }catch(e){
     if(e.message==='NO_KEY'||e.message==='NO_GEMINI_KEY'){document.getElementById('keyBanner').style.display='block';document.getElementById('keyBtn').style.display='flex';}
     renderAI(mockAI(name));
