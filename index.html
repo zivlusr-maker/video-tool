@@ -853,7 +853,6 @@ function switchCat(idxOrName){
   curCat=typeof idxOrName==='number'?_matCatKeys[idxOrName]:idxOrName;
   initMat();
 }
-function switchCat(cat){curCat=cat;initMat();}
 function filterMat(){matQ=(document.getElementById('matSearch')?.value||'').toLowerCase();renderMat();}
 function renderMat(){
   const el=document.getElementById('matGrid');if(!el)return;
@@ -876,7 +875,7 @@ function copyMat(el,i,catIdxOrName){const cat=typeof catIdxOrName==='number'?_ma
   const txt=Object.entries(r).filter(([k])=>k!=='_cat').map(([k,v])=>`[${k}] ${v}`).join('\n');
   navigator.clipboard.writeText(txt).then(()=>{el.style.borderColor='#2ec27e';el.style.background='rgba(46,194,126,0.06)';setTimeout(()=>{el.style.borderColor='';el.style.background='';},1500);}).catch(()=>{});
 }
-function matToAI(i,catIdxOrName){const cat=typeof catIdxOrName==='number'?_matCatKeys[catIdxOrName]:catIdxOrName;{
+function matToAI(i,catIdxOrName){const cat=typeof catIdxOrName==='number'?_matCatKeys[catIdxOrName]:catIdxOrName;
   const r=MATERIALS[cat]?.records[i];if(!r)return;
   const keys=Object.keys(r),name=r[keys[0]]||'';
   const pts=Object.entries(r).filter(([k])=>k.includes('卖点')||k.includes('话术')||k.includes('钩子')||k.includes('核心')).map(([k,v])=>`${k}: ${v}`).join('\n');
