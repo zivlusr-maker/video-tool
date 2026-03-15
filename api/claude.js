@@ -8,12 +8,27 @@ export default async function handler(req, res) {
   // 健康检查
   if (req.body && req.body.__ping) return res.status(200).json({ ok: true });
 
-  // 支持多种环境变量名（兼容用户可能设置的不同名称）
-  const apiKey = process.env.ANTHROPIC_API_KEY 
-    || process.env.Authorization 
-    || process.env.CLAUDE_API_KEY
-    || process.env.API_KEY;
-  if (!apiKey) return res.status(503).json({ error: 'API key not configured' });
+  // ===== Gemini 代理 =====
+  if (req.body && req.body.__gemini) {
+    const gKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+
+    const { model, body: geminiBody } = req.body;
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(geminiBody) }
+      );
+      const d = await r.json();
+      return res.status(r.status).json(d);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ===== Claude 代理 =====
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
