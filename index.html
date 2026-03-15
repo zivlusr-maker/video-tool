@@ -777,47 +777,60 @@ async function genOneVideo(shot,idx,style,portrait,gKey){
   const vidPrompt=`${shot.description}. ${shot.copywriting?'Context: '+shot.copywriting+'.':''} Style: ${style}. ${ar} video, ${Math.min(8,Math.max(4,Math.round(shot.endTime-shot.startTime)))} seconds. Smooth camera. No text overlays. Baby clothing commercial.`;
 
   try{
-    // Step 1: Nano Banana 生成首帧
-    setSt(cid,'🖼️ Nano Banana生成首帧...','');
-    const imgR=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}})});
+    // Step 1: Nano Banana 2 生成首帧（走服务端代理）
+    setSt(cid,'🖼️ Nano Banana 生成首帧...','');
+    const imgR=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({__gemini:true,model:'gemini-3.1-flash-image-preview',body:{
+        contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],
+        generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
+      }})});
     const imgD=await imgR.json();
     let imgB64=null,imgMime='image/png';
-    for(const p of imgD.candidates?.[0]?.content?.parts||[]){if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}}
-
+    for(const p of imgD.candidates?.[0]?.content?.parts||[]){
+      if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}
+    }
     let bodyHtml='';
     if(imgB64){
       bodyHtml=`<img src="data:${imgMime};base64,${imgB64}" style="width:${portrait?'100px':'180px'};height:${portrait?'178px':'101px'};object-fit:cover;border-radius:8px;margin-bottom:10px;display:block">`;
-      setSt(cid,'✅ 首帧完成，Veo生成视频...',bodyHtml);
-    }else{setSt(cid,'⚠️ 首帧失败，直接生成视频...','');}
+      setSt(cid,'✅ 首帧完成，Veo 3.1 生成视频...',bodyHtml);
+    }else{setSt(cid,'⚠️ 首帧失败，直接文生视频...','');}
 
-    // Step 2: Veo 生成视频
-    const veoBody={model:'veo-3.1-generate-preview',prompt:vidPrompt,generationConfig:{aspectRatio:ar,durationSeconds:Math.min(8,Math.max(4,Math.round(shot.endTime-shot.startTime))),numberOfVideos:1,personGeneration:'allow_adult'}};
-    if(imgB64)veoBody.image={bytesBase64Encoded:imgB64,mimeType:imgMime};
-    const vR=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:generateVideos?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(veoBody)});
+    // Step 2: Veo 3.1 生成视频（走服务端代理）
+    const veoPayload={
+      prompt:vidPrompt,
+      generationConfig:{aspectRatio:ar,durationSeconds:Math.min(8,Math.max(4,Math.round(shot.endTime-shot.startTime))),numberOfVideos:1,personGeneration:'allow_adult'}
+    };
+    if(imgB64)veoPayload.image={bytesBase64Encoded:imgB64,mimeType:imgMime};
+    const vR=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({__veo:true,model:'veo-3.1-generate-preview',body:veoPayload})});
     const vD=await vR.json();
-    if(vD.error)throw new Error(vD.error.message||'Veo error');
-    const opName=vD.name;
+    if(vD.error)throw new Error(vD.error.message||'Veo error: '+JSON.stringify(vD));
+    const opName=vD.name||vD.operationName;
     if(opName){
       let done=false,att=0;
-      while(!done&&att<30){
+      while(!done&&att<40){
         await sleep(6000);att++;
         setSt(cid,`🎬 Veo生成中... (${att*6}s)`,getBody(cid));
-        const pR=await fetch(`https://generativelanguage.googleapis.com/v1beta/${opName}?key=${gKey}`);
+        const pR=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({__veo_poll:true,opName})});
         const pD=await pR.json();
-        if(pD.done){done=true;
+        if(pD.done||pD.error){done=true;
+          if(pD.error)throw new Error(pD.error.message||'Poll error');
           const vids=pD.response?.generatedVideos||[];
           if(vids.length){
             const uri=vids[0].video?.uri,b64=vids[0].video?.bytesBase64Encoded;
             const prev=getBody(cid);
-            if(uri)setSt(cid,'✅ 视频生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${uri}"></video><br><a href="${uri}" download="shot_${shot.id}.mp4" style="color:var(--ac2);font-size:12px;margin-top:4px;display:inline-block">⬇ 下载视频</a>`);
+            if(uri)setSt(cid,'✅ 视频生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${uri}"></video><br><a href="${uri}" download="shot_${shot.id}.mp4" style="color:var(--ac2);font-size:12px;margin-top:4px;display:inline-block">⬇ 下载</a>`);
             else if(b64){const u=`data:video/mp4;base64,${b64}`;setSt(cid,'✅ 生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${u}"></video>`);}
-            else setSt(cid,'⚠️ 无视频输出',prev+noticeHtml());
-          }else setSt(cid,'⚠️ 无输出',getBody(cid)+noticeHtml());
+            else setSt(cid,'⚠️ 无视频输出，请前往AI Studio查看',prev);
+          }else setSt(cid,'⚠️ 无输出',getBody(cid));
         }
       }
-      if(!done)setSt(cid,'⏰ 超时',getBody(cid)+noticeHtml());
+      if(!done)setSt(cid,'⏰ 超时（视频仍在生成，可稍后在AI Studio查看）',getBody(cid));
+    }else{
+      setSt(cid,'⚠️ 未获取到任务ID，响应: '+JSON.stringify(vD).substring(0,100),getBody(cid));
     }
-  }catch(e){setSt(cid,'❌ 失败',`<div style="font-size:12px;color:var(--red);margin-top:6px">${e.message}</div>${noticeHtml()}`);}
+  }catch(e){setSt(cid,'❌ 失败: '+e.message.substring(0,80),`<div style="font-size:12px;color:var(--red);margin-top:6px">${e.message}</div>`);}
 }
 function noticeHtml(){return'<div style="font-size:11px;color:var(--t2);margin-top:8px;line-height:1.7">💡 Veo需要Google AI付费账户。可前往 <a href="https://aistudio.google.com" target="_blank" style="color:#4285f4">AI Studio</a> 手动生成。</div>';}
 function setSt(id,st,body){const s=document.getElementById(id+'-st');if(s)s.textContent=st;if(body!==undefined){const b=document.getElementById(id+'-body');if(b)b.innerHTML=body;}}
@@ -827,11 +840,18 @@ function getBody(id){const b=document.getElementById(id+'-body');return b?b.inne
 let curCat=Object.keys(MATERIALS)[0],matQ='';
 function initMat(){
   const el=document.getElementById('matCats');if(!el)return;
-  el.innerHTML=Object.keys(MATERIALS).map(cat=>{
+  const cats=Object.keys(MATERIALS);
+  el.innerHTML=cats.map((cat,idx)=>{
     const on=cat===curCat,bg=on?MBGS[cat]:'var(--bg2)',c=on?MCOLORS[cat]:'var(--t2)',bo=on?`1px solid ${MCOLORS[cat]}50`:'1px solid var(--b)';
-    return`<button class="mat-cat-btn" onclick="switchCat('${cat.replace(/'/g,"\'")}'')" style="background:${bg};color:${c};border:${bo}">${MICONS[cat]||'📁'} ${cat} <span style="opacity:.65">${MATERIALS[cat].count}</span></button>`;
+    return`<button class="mat-cat-btn" onclick="switchCat(${idx})" style="background:${bg};color:${c};border:${bo}">${MICONS[cat]||'📁'} ${cat} <span style="opacity:.65">${MATERIALS[cat].count}</span></button>`;
   }).join('');
   renderMat();
+}
+// 用index代替字符串，彻底避免引号问题
+const _matCatKeys=Object.keys(MATERIALS);
+function switchCat(idxOrName){
+  curCat=typeof idxOrName==='number'?_matCatKeys[idxOrName]:idxOrName;
+  initMat();
 }
 function switchCat(cat){curCat=cat;initMat();}
 function filterMat(){matQ=(document.getElementById('matSearch')?.value||'').toLowerCase();renderMat();}
@@ -849,14 +869,14 @@ function matCard(r,cat,i){
   const c=MCOLORS[cat]||'#6c85ff',bg=MBGS[cat]||'rgba(79,110,247,0.12)',icon=MICONS[cat]||'📁';
   const keys=Object.keys(r).filter(k=>k!=='_cat'),title=(r[keys[0]]||`素材#${i+1}`).substring(0,90);
   const actionable=cat.includes('CTA')||cat.includes('框架')||cat.includes('痛点')||cat.includes('评论');
-  return`<div class="mat-card" onclick="copyMat(this,${i},'${cat.replace(/'/g,"\'")}')"><div style="margin-bottom:8px"><span style="background:${bg};color:${c};font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px">${icon} ${cat.split('库')[0]}</span></div><div class="mat-ttl">${title}${r[keys[0]]&&r[keys[0]].length>90?'...':''}</div>${keys.slice(1,4).map(k=>r[k]?`<div class="mat-row"><span class="mat-k">${k.substring(0,8)}</span><span class="mat-v">${String(r[k]).substring(0,55)}${String(r[k]).length>55?'...':''}</span></div>`:'').join('')}<div style="margin-top:8px;display:flex;gap:8px;align-items:center">${actionable?`<button onclick="event.stopPropagation();matToAI(${i},'${cat.replace(/'/g,"\'")}'')" style="background:rgba(79,110,247,0.1);border:1px solid rgba(79,110,247,0.3);color:var(--ac2);padding:3px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">→ AI改编</button>`:''}<span style="font-size:11px;color:var(--t3)">点击复制</span></div></div>`;
+  return`<div class="mat-card" onclick="copyMat(this,${i},${Object.keys(MATERIALS).indexOf(cat)})"><div style="margin-bottom:8px"><span style="background:${bg};color:${c};font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px">${icon} ${cat.split('库')[0]}</span></div><div class="mat-ttl">${title}${r[keys[0]]&&r[keys[0]].length>90?'...':''}</div>${keys.slice(1,4).map(k=>r[k]?`<div class="mat-row"><span class="mat-k">${k.substring(0,8)}</span><span class="mat-v">${String(r[k]).substring(0,55)}${String(r[k]).length>55?'...':''}</span></div>`:'').join('')}<div style="margin-top:8px;display:flex;gap:8px;align-items:center">${actionable?`<button onclick="event.stopPropagation();matToAI(${i},${Object.keys(MATERIALS).indexOf(cat)})" style="background:rgba(79,110,247,0.1);border:1px solid rgba(79,110,247,0.3);color:var(--ac2);padding:3px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">→ AI改编</button>`:''}<span style="font-size:11px;color:var(--t3)">点击复制</span></div></div>`;
 }
-function copyMat(el,i,cat){
+function copyMat(el,i,catIdxOrName){const cat=typeof catIdxOrName==='number'?_matCatKeys[catIdxOrName]:catIdxOrName;
   const r=MATERIALS[cat]?.records[i];if(!r)return;
   const txt=Object.entries(r).filter(([k])=>k!=='_cat').map(([k,v])=>`[${k}] ${v}`).join('\n');
   navigator.clipboard.writeText(txt).then(()=>{el.style.borderColor='#2ec27e';el.style.background='rgba(46,194,126,0.06)';setTimeout(()=>{el.style.borderColor='';el.style.background='';},1500);}).catch(()=>{});
 }
-function matToAI(i,cat){
+function matToAI(i,catIdxOrName){const cat=typeof catIdxOrName==='number'?_matCatKeys[catIdxOrName]:catIdxOrName;{
   const r=MATERIALS[cat]?.records[i];if(!r)return;
   const keys=Object.keys(r),name=r[keys[0]]||'';
   const pts=Object.entries(r).filter(([k])=>k.includes('卖点')||k.includes('话术')||k.includes('钩子')||k.includes('核心')).map(([k,v])=>`${k}: ${v}`).join('\n');
