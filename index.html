@@ -439,6 +439,11 @@ function updateModelUI() {
     b.style.color = on ? (selectedModel==='gemini'?'#4285f4':'#6c85ff') : 'var(--t2)';
     b.style.borderColor = on ? (selectedModel==='gemini'?'rgba(66,133,244,0.4)':'rgba(108,133,255,0.4)') : 'var(--b)';
   });
+  // 更新 hdrSub 显示当前模型（仅在上传页）
+  const sub = document.getElementById('hdrSub');
+  if (sub && sub.textContent.includes('就绪')) {
+    sub.textContent = selectedModel === 'gemini' ? '● Gemini 2.5 Pro 就绪' : '● Claude 分析引擎就绪';
+  }
 }
 
 // ==================== API CALL ====================
@@ -493,7 +498,14 @@ async function callGemini(claudeBody) {
   }
 
   // 尝试 2.5 pro，失败降级到 1.5 pro
-  const models = ['gemini-2.5-pro-preview-03-25','gemini-2.0-flash','gemini-1.5-pro'];
+  // 按能力从强到弱的 fallback 链（模型名来自你账号的实际可用列表）
+  const models = [
+    'gemini-3.1-pro-preview',      // 最强，支持图片
+    'gemini-2.5-pro',              // 稳定版 2.5 Pro
+    'gemini-3-pro-preview',        // Gemini 3 Pro
+    'gemini-2.5-flash',            // 快速版，免费额度大
+    'gemini-2.0-flash',            // 备用
+  ];
   let d = null, lastErr = '';
   for (const modelName of models) {
     const r = await fetch(
@@ -506,7 +518,9 @@ async function callGemini(claudeBody) {
     );
     d = await r.json();
     if (r.ok && !d.error) break;
-    lastErr = d.error?.message || `${modelName} error ${r.status}`;
+    const errMsg = d.error?.message || `HTTP ${r.status}`;
+    console.warn(`Gemini ${modelName} failed:`, errMsg, d);
+    lastErr = `${modelName}: ${errMsg}`;
     d = null;
   }
   if (!d) throw new Error('Gemini error: ' + lastErr);
@@ -740,7 +754,7 @@ async function genOneVideo(shot,idx,style,portrait,gKey){
   try{
     // Step 1: Nano Banana 生成首帧
     setSt(cid,'🖼️ Nano Banana生成首帧...','');
-    const imgR=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],generationConfig:{responseModalities:['IMAGE'],candidateCount:1}})});
+    const imgR=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}})});
     const imgD=await imgR.json();
     let imgB64=null,imgMime='image/png';
     for(const p of imgD.candidates?.[0]?.content?.parts||[]){if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}}
@@ -752,9 +766,9 @@ async function genOneVideo(shot,idx,style,portrait,gKey){
     }else{setSt(cid,'⚠️ 首帧失败，直接生成视频...','');}
 
     // Step 2: Veo 生成视频
-    const veoBody={model:'veo-3.0-generate-preview',prompt:vidPrompt,generationConfig:{aspectRatio:ar,durationSeconds:Math.min(8,Math.max(4,Math.round(shot.endTime-shot.startTime))),numberOfVideos:1,personGeneration:'allow_adult'}};
+    const veoBody={model:'veo-3.1-generate-preview',prompt:vidPrompt,generationConfig:{aspectRatio:ar,durationSeconds:Math.min(8,Math.max(4,Math.round(shot.endTime-shot.startTime))),numberOfVideos:1,personGeneration:'allow_adult'}};
     if(imgB64)veoBody.image={bytesBase64Encoded:imgB64,mimeType:imgMime};
-    const vR=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-generate-preview:generateVideos?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(veoBody)});
+    const vR=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:generateVideos?key=${gKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(veoBody)});
     const vD=await vR.json();
     if(vD.error)throw new Error(vD.error.message||'Veo error');
     const opName=vD.name;
