@@ -508,14 +508,20 @@ async function callGemini(claudeBody) {
   ];
   let d = null, lastErr = '';
   for (const modelName of models) {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${gKey}`,
-      {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.3,maxOutputTokens:2000}})
-      }
-    );
+    const geminiBody = {contents:[{role:'user',parts}],generationConfig:{temperature:0.3,maxOutputTokens:2000}};
+    let r, proxyOk = true;
+    // 先走服务端代理（无CORS，Key不暴露）
+    try {
+      r = await fetch('/api/claude', {method:'POST',headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({__gemini:true, model:modelName, body:geminiBody})});
+      if (r.status === 503) proxyOk = false;
+    } catch(e) { proxyOk = false; }
+    // 代理没有GOOGLE_API_KEY，降级直连（用本地Key）
+    if (!proxyOk) {
+      if (!gKey) throw new Error('NO_GEMINI_KEY');
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${gKey}`,
+        {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(geminiBody)});
+    }
     d = await r.json();
     if (r.ok && !d.error) break;
     const errMsg = d.error?.message || `HTTP ${r.status}`;
