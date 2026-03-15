@@ -5,14 +5,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // 健康检查
   if (req.body && req.body.__ping) return res.status(200).json({ ok: true });
 
-  // ===== Gemini 代理 =====
+  // Gemini 代理
   if (req.body && req.body.__gemini) {
     const gKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
-
     const { model, body: geminiBody } = req.body;
     try {
       const r = await fetch(
@@ -26,10 +24,9 @@ export default async function handler(req, res) {
     }
   }
 
-  // ===== Claude 代理 =====
+  // Claude 代理
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
-
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
