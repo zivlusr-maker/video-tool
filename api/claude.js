@@ -8,7 +8,11 @@ export default async function handler(req, res) {
   // 健康检查
   if (req.body && req.body.__ping) return res.status(200).json({ ok: true });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // 支持多种环境变量名（兼容用户可能设置的不同名称）
+  const apiKey = process.env.ANTHROPIC_API_KEY 
+    || process.env.Authorization 
+    || process.env.CLAUDE_API_KEY
+    || process.env.API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'API key not configured' });
 
   try {
