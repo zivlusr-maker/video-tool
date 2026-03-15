@@ -184,6 +184,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="logo-sub" id="hdrSub">● AI 分析引擎就绪</div>
   </div>
   <div class="hdr-r">
+    <div style="display:flex;gap:4px;background:var(--bg3);border:1px solid var(--b);border-radius:20px;padding:3px">
+      <button class="model-btn hbtn" data-model="claude" onclick="setModel('claude')" style="border:1px solid transparent;border-radius:16px;padding:5px 14px;font-size:12px;cursor:pointer;transition:all .2s">Claude</button>
+      <button class="model-btn hbtn" data-model="gemini" onclick="setModel('gemini')" style="border:1px solid transparent;border-radius:16px;padding:5px 14px;font-size:12px;cursor:pointer;transition:all .2s">Gemini</button>
+    </div>
     <button class="hbtn hbtn-ac" id="keyBtn" style="display:none" onclick="toggleKeyBanner()">🔑 API Key</button>
     <button class="hbtn" id="backBtn" style="display:none" onclick="resetApp()">← 重新分析</button>
   </div>
@@ -192,10 +196,21 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <!-- KEY BANNER -->
 <div id="keyBanner">
   <div class="key-inner">
-    <span style="font-size:13px;color:var(--ac2);font-weight:700;flex-shrink:0">🔑 Anthropic API Key</span>
-    <input class="key-inp" type="password" id="keyInp" placeholder="sk-ant-api03-...">
-    <button class="key-save" onclick="saveKey()">保存</button>
-    <span class="key-hint">Key只存本地 · <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--ac2)">免费获取</a></span>
+    <!-- Claude Key -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--ac2);font-weight:700;flex-shrink:0">🔑 Claude Key</span>
+      <input class="key-inp" type="password" id="keyInp" placeholder="sk-ant-api03-..." style="width:220px">
+      <button class="key-save" onclick="saveKey()">保存</button>
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:11px;color:var(--ac2)">获取</a>
+    </div>
+    <div style="width:1px;height:24px;background:var(--b);flex-shrink:0;margin:0 4px"></div>
+    <!-- Gemini Key -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#4285f4;font-weight:700;flex-shrink:0">🔑 Gemini Key</span>
+      <input class="key-inp" type="password" id="geminiKeyInp" placeholder="AIzaSy..." style="width:200px">
+      <button class="key-save" onclick="saveGeminiKeyFromBanner()" style="background:linear-gradient(135deg,#4285f4,#0f9d58)">保存</button>
+      <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size:11px;color:#4285f4">获取（免费）</a>
+    </div>
   </div>
 </div>
 
@@ -408,29 +423,94 @@ function updateGStatus(){
   else{el.textContent='未配置';el.style.background='rgba(255,82,82,0.12)';el.style.color='var(--red)';}
 }
 
+// ==================== AI MODEL CONFIG ====================
+const MODELS = {
+  claude: { name: 'Claude (Anthropic)', color: '#6c85ff' },
+  gemini: { name: 'Gemini 2.5 Pro (Google)', color: '#4285f4' }
+};
+let selectedModel = localStorage.getItem('vvt_model') || 'claude';
+
+function getModel() { return selectedModel; }
+function setModel(m) { selectedModel = m; localStorage.setItem('vvt_model', m); updateModelUI(); }
+function updateModelUI() {
+  document.querySelectorAll('.model-btn').forEach(b => {
+    const on = b.dataset.model === selectedModel;
+    b.style.background = on ? (selectedModel==='gemini'?'rgba(66,133,244,0.15)':'rgba(108,133,255,0.15)') : 'var(--bg2)';
+    b.style.color = on ? (selectedModel==='gemini'?'#4285f4':'#6c85ff') : 'var(--t2)';
+    b.style.borderColor = on ? (selectedModel==='gemini'?'rgba(66,133,244,0.4)':'rgba(108,133,255,0.4)') : 'var(--b)';
+  });
+}
+
 // ==================== API CALL ====================
-async function callClaude(body){
-  // 1. 先尝试服务端代理（Key由Vercel环境变量提供）
-  try{
-    const r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(r.ok)return r.json();
-    const d=await r.json().catch(()=>({}));
-    if(r.status===503||d.error==='API key not configured'){
-      // 代理没有Key，走直连
-    }else if(r.status!==404&&r.status!==405){
-      throw new Error(d.error||'Proxy error '+r.status);
-    }
-  }catch(e){
-    if(e.message.includes('Proxy error')||e.message.includes('API key not configured'))throw e;
-  }
-  // 2. 直连Anthropic（用本地存储的Key）
-  const key=getAKey();
-  if(!key)throw new Error('NO_KEY');
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
-  const d=await r.json();
-  if(!r.ok)throw new Error(d.error?.message||'API error '+r.status);
+async function callAI(body) {
+  const model = getModel();
+  if (model === 'gemini') return callGemini(body);
+  return callClaude(body);
+}
+
+async function callClaude(body) {
+  // 1. 先尝试服务端代理
+  try {
+    const r = await fetch('/api/claude', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    if (r.ok) { const d = await r.json(); if (!d.error) return d; }
+  } catch(e) { /* 代理失败，继续直连 */ }
+
+  // 2. 直连 Anthropic（本地 Key）
+  const key = getAKey();
+  if (!key) throw new Error('NO_KEY');
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type':'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || 'Claude API error ' + r.status);
   return d;
 }
+
+async function callGemini(claudeBody) {
+  // 把 Claude 格式转成 Gemini 格式
+  const gKey = getGeminiKey();
+  if (!gKey) throw new Error('NO_GEMINI_KEY');
+
+  const parts = [];
+  const msgs = claudeBody.messages || [];
+  for (const msg of msgs) {
+    const content = Array.isArray(msg.content) ? msg.content : [{type:'text',text:msg.content}];
+    for (const c of content) {
+      if (c.type === 'text') parts.push({text: c.text});
+      else if (c.type === 'image' && c.source?.data) {
+        parts.push({inlineData:{mimeType: c.source.media_type || 'image/jpeg', data: c.source.data}});
+      }
+    }
+  }
+
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent?key=${gKey}`,
+    {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.3}})
+    }
+  );
+  const d = await r.json();
+  if (!r.ok || d.error) throw new Error(d.error?.message || 'Gemini API error');
+
+  // 转成 Claude 响应格式（让下游代码统一处理）
+  const text = d.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
+  return { content: [{ type: 'text', text }] };
+}
+
+const GEMINI_KEY_STORE = 'vvt_gemini_key';
+function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORE) || ''; }
+function saveGeminiKey(k) { localStorage.setItem(GEMINI_KEY_STORE, k); }
 
 // ==================== FILE INPUT ====================
 function onDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('video/'))startWithFile(f);}
@@ -494,7 +574,7 @@ async function startAnalysis(file){
   try{
     const imgs=frames.filter(f=>f.url).slice(0,8).map(f=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:f.url.split(',')[1]}}));
     const content=imgs.length>0?[...imgs,{type:'text',text:buildPrompt(frames.length,dur)}]:[{type:'text',text:buildPrompt(frames.length,dur)}];
-    const data=await callClaude({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content}]});
+    const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content}]});
     const txt=data.content?.[0]?.text||'';
     const clean=txt.replace(/```json\n?|```/g,'').trim();
     result=JSON.parse(clean.substring(clean.indexOf('{')));
@@ -590,12 +670,12 @@ async function genScript(){
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.innerHTML='<span>⏳</span><span>AI生成中...</span>';
   const struct=appData.shots.map(s=>`镜头${s.id}[${s.type},${(s.endTime-s.startTime).toFixed(1)}秒]`).join('、');
   try{
-    const data=await callClaude({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:`你是顶级短视频脚本策划师。\n【原视频结构】${struct}\n【产品】${name}\n【卖点】${points||'请根据产品名推测'}\n【用户】${audience||'普通消费者'}\n基于原视频爆款结构为产品生成改编脚本。严格JSON：\n{"title":"脚本标题","shots":[{"id":1,"type":"镜头类型","duration":5.0,"description":"画面描述2-3句","copywriting":"口播文案"}]}`}]});
+    const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:`你是顶级短视频脚本策划师。\n【原视频结构】${struct}\n【产品】${name}\n【卖点】${points||'请根据产品名推测'}\n【用户】${audience||'普通消费者'}\n基于原视频爆款结构为产品生成改编脚本。严格JSON：\n{"title":"脚本标题","shots":[{"id":1,"type":"镜头类型","duration":5.0,"description":"画面描述2-3句","copywriting":"口播文案"}]}`}]});
     const txt=data.content?.[0]?.text||'';
     const clean=txt.replace(/```json\n?|```/g,'').trim();
     renderAI(JSON.parse(clean.substring(clean.indexOf('{'))));
   }catch(e){
-    if(e.message==='NO_KEY'){document.getElementById('keyBanner').style.display='block';document.getElementById('keyBtn').style.display='flex';}
+    if(e.message==='NO_KEY'||e.message==='NO_GEMINI_KEY'){document.getElementById('keyBanner').style.display='block';document.getElementById('keyBtn').style.display='flex';}
     renderAI(mockAI(name));
   }
   btn.disabled=false;btn.innerHTML='<span>✨</span><span>重新生成</span>';
@@ -767,6 +847,17 @@ function resetApp(){
   document.getElementById('resPg').style.display='none';
 }
 
+function saveGeminiKeyFromBanner() {
+  const k = document.getElementById('geminiKeyInp').value.trim();
+  if (!k.startsWith('AIza')) { alert('请输入正确的 Google API Key（以 AIzaSy 开头）'); return; }
+  saveGeminiKey(k);
+  // 自动切换到 Gemini 模型
+  setModel('gemini');
+  document.getElementById('keyBanner').style.display = 'none';
+  document.getElementById('keyBtn').style.display = 'none';
+  alert('✅ Gemini Key 已保存，已自动切换到 Gemini 模型！');
+}
+
 // ==================== INIT ====================
 // 检查API代理是否可用，不可用则提示配置Key
 fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({__ping:true})})
@@ -780,6 +871,10 @@ fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},b
     }
   });
 updateGStatus();
+updateModelUI();
+// 显示已保存的Key（脱敏）
+if(getAKey()){const inp=document.getElementById('keyInp');if(inp)inp.value=getAKey().substring(0,8)+'••••••••••••';}
+if(getGeminiKey()){const inp=document.getElementById('geminiKeyInp');if(inp)inp.value=getGeminiKey().substring(0,8)+'••••••••';}
 </script>
 </body>
 </html>
