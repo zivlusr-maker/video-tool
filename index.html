@@ -658,7 +658,7 @@ async function genOneVideo(shot,idx,style,portrait){
   prog.insertAdjacentHTML('beforeend',`<div id="${cid}" class="vcard"><div class="vchdr"><span style="background:${t.bg};color:${t.c};font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px">#${shot.id} ${shot.type}</span><span style="font-size:12px;color:var(--t2)">${shot.startTime.toFixed(1)}s–${shot.endTime.toFixed(1)}s</span><span id="${cid}st" style="margin-left:auto;font-size:12px;color:var(--t2)">🔄 启动...</span></div><div id="${cid}bd" style="font-size:13px;color:var(--t2)">准备中...</div></div>`);
 
   const ar=portrait?'9:16':'16:9';
-  const shotLen=shot.endTime-shot.startTime;const dur=Math.min(8,Math.max(4,shotLen>=4?Math.round(shotLen):4));
+  const shotLen=parseFloat(shot.endTime)-parseFloat(shot.startTime);const dur=Math.min(8,Math.max(4,Math.ceil(shotLen<4?4:shotLen>8?8:shotLen)));
   const imgPrompt=`${shot.description}. ${portrait?'Vertical 9:16':'Landscape 16:9'}. ${style}. Photorealistic, no text, no watermark.`;
   const vidPrompt=`${shot.description}. ${shot.copywriting?'Scene: '+shot.copywriting+'.':''} ${style}. ${ar} format. ${dur} seconds. Smooth camera movement. No text overlays. Baby clothing commercial.`;
 
@@ -700,7 +700,7 @@ async function genOneVideo(shot,idx,style,portrait){
       __veo:true,
       model:'veo-3.1-generate-preview',
       instances:[vInstance],
-      parameters:{aspectRatio:ar,durationSeconds:dur,sampleCount:1,personGeneration:'allow_adult'}
+      parameters:{aspectRatio:ar,durationSeconds:parseInt(dur),sampleCount:1,personGeneration:'allow_adult'}
     });
 
     if(vR.error) throw new Error(vR.error);
