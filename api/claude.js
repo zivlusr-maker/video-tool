@@ -9,48 +9,45 @@ export default async function handler(req, res) {
 
   const gKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
-  // Veo 视频生成 (predictLongRunning)
+  // ===== Veo 视频生成 =====
+  // 正确格式: {"instances":[{"prompt":"...","image":{"bytesBase64Encoded":"..."}}],"parameters":{"aspectRatio":"16:9",...}}
   if (req.body && req.body.__veo) {
     if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
-    const { model, body: veoBody } = req.body;
+    const { model, instances, parameters } = req.body;
     try {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:predictLongRunning?key=${gKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veoBody) }
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instances, parameters })
+        }
       );
       const text = await r.text();
-      if (!text) return res.status(200).json({ error: 'Empty response from Veo API' });
-      try {
-        return res.status(r.status).json(JSON.parse(text));
-      } catch(e) {
-        return res.status(200).json({ error: 'Veo response parse error: ' + text.substring(0, 200) });
-      }
+      if (!text) return res.status(200).json({ error: 'Empty Veo response' });
+      try { return res.status(r.status).json(JSON.parse(text)); }
+      catch(e) { return res.status(200).json({ error: 'Veo parse error: ' + text.substring(0, 300) }); }
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
   }
 
-  // Veo 轮询进度
+  // ===== Veo 轮询进度 =====
   if (req.body && req.body.__veo_poll) {
     if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
     const { opName } = req.body;
     try {
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/${opName}?key=${gKey}`
-      );
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${opName}?key=${gKey}`);
       const text = await r.text();
       if (!text) return res.status(200).json({ done: false });
-      try {
-        return res.status(r.status).json(JSON.parse(text));
-      } catch(e) {
-        return res.status(200).json({ error: 'Poll parse error: ' + text.substring(0, 200) });
-      }
+      try { return res.status(r.status).json(JSON.parse(text)); }
+      catch(e) { return res.status(200).json({ error: 'Poll parse error: ' + text.substring(0, 200) }); }
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
   }
 
-  // Gemini 文本/图片生成
+  // ===== Gemini 文本/图片 =====
   if (req.body && req.body.__gemini) {
     if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
     const { model, body: geminiBody } = req.body;
@@ -66,17 +63,13 @@ export default async function handler(req, res) {
     }
   }
 
-  // Claude 文本生成
+  // ===== Claude =====
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify(req.body),
     });
     const data = await response.json();
