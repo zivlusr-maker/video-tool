@@ -531,7 +531,7 @@ async function callGemini(claudeBody) {
 }
 
 const GEMINI_KEY_STORE = 'vvt_gemini_key';
-function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORE) || ''; }
+function getGeminiKey() { return localStorage.getItem('vvt_gemini_key') || localStorage.getItem('vvt_gkey') || ''; }
 function saveGeminiKey(k) { localStorage.setItem(GEMINI_KEY_STORE, k); }
 
 // ==================== FILE INPUT ====================
@@ -590,7 +590,11 @@ async function startAnalysis(file){
   steps[0].st='done';steps[1].st='done';
   uprog(32,`已提取 ${frames.length} 个关键帧`,steps);
   await sleep(300);
-  steps[2].st='active';uprog(46,'Claude AI 正在分析画面内容...',steps);
+  const modelNow = getModel();
+  const keyOk = modelNow==='gemini' ? !!getGeminiKey() : !!getAKey();
+  const modelLabel = modelNow==='gemini' ? 'Gemini 2.5 Pro' : 'Claude';
+  const keyLabel = keyOk ? '✅' : '❌无Key→用演示数据';
+  steps[2].st='active';uprog(46,`${modelLabel} 分析画面 ${keyLabel}`,steps);
 
   let result;
   try{
@@ -604,8 +608,10 @@ async function startAnalysis(file){
     if(jsonStart===-1||jsonEnd===0)throw new Error('No JSON in response: '+clean.substring(0,200));
     result=JSON.parse(clean.substring(jsonStart,jsonEnd));
   }catch(e){
-    console.warn('AI fallback:',e.message);
-    if(e.message==='NO_KEY'){
+    console.warn('AI fallback:', e.message);
+    // 把错误显示在分析状态栏，方便调试
+    document.getElementById('anaStatus').textContent = '⚠️ AI分析失败: ' + e.message.substring(0,80);
+    if(e.message==='NO_KEY'||e.message==='NO_GEMINI_KEY'){
       document.getElementById('keyBanner').style.display='block';
       document.getElementById('keyBtn').style.display='flex';
     }
@@ -877,12 +883,16 @@ function resetApp(){
 function saveGeminiKeyFromBanner() {
   const k = document.getElementById('geminiKeyInp').value.trim();
   if (!k.startsWith('AIza')) { alert('请输入正确的 Google API Key（以 AIzaSy 开头）'); return; }
-  saveGeminiKey(k);
+  // 同时存入两个存储位置（分析 + 视频生成）
+  localStorage.setItem('vvt_gemini_key', k);
+  localStorage.setItem('vvt_gkey', k);
   // 自动切换到 Gemini 模型
   setModel('gemini');
   document.getElementById('keyBanner').style.display = 'none';
   document.getElementById('keyBtn').style.display = 'none';
-  alert('✅ Gemini Key 已保存，已自动切换到 Gemini 模型！');
+  // 更新视频生成页面的key状态
+  updateGStatus();
+  alert('✅ Gemini Key 已保存！现在请重新上传视频进行分析。');
 }
 
 // ==================== INIT ====================
@@ -898,6 +908,10 @@ fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},b
     }
   });
 updateGStatus();
+// 如果有Gemini Key但没有Claude Key，自动切换到Gemini模式
+if(getGeminiKey() && !getAKey() && selectedModel !== 'gemini') {
+  setModel('gemini');
+}
 updateModelUI();
 // 显示已保存的Key（脱敏）
 if(getAKey()){const inp=document.getElementById('keyInp');if(inp)inp.value=getAKey().substring(0,8)+'••••••••••••';}
