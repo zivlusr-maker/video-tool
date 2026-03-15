@@ -5,10 +5,44 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // 健康检查
   if (req.body && req.body.__ping) return res.status(200).json({ ok: true });
 
+  const gKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+
+  // Veo 视频生成
+  if (req.body && req.body.__veo) {
+    if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+    const { model, body: veoBody } = req.body;
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateVideos?key=${gKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veoBody) }
+      );
+      const d = await r.json();
+      return res.status(r.status).json(d);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Veo 轮询进度
+  if (req.body && req.body.__veo_poll) {
+    if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+    const { opName } = req.body;
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${opName}?key=${gKey}`
+      );
+      const d = await r.json();
+      return res.status(r.status).json(d);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Gemini 文本/图片生成
   if (req.body && req.body.__gemini) {
-    const gKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     if (!gKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
     const { model, body: geminiBody } = req.body;
     try {
@@ -23,6 +57,7 @@ export default async function handler(req, res) {
     }
   }
 
+  // Claude 文本生成
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
   try {
@@ -41,6 +76,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
-
-
-
