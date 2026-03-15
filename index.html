@@ -658,7 +658,7 @@ async function genOneVideo(shot,idx,style,portrait){
   prog.insertAdjacentHTML('beforeend',`<div id="${cid}" class="vcard"><div class="vchdr"><span style="background:${t.bg};color:${t.c};font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px">#${shot.id} ${shot.type}</span><span style="font-size:12px;color:var(--t2)">${shot.startTime.toFixed(1)}s–${shot.endTime.toFixed(1)}s</span><span id="${cid}st" style="margin-left:auto;font-size:12px;color:var(--t2)">🔄 启动...</span></div><div id="${cid}bd" style="font-size:13px;color:var(--t2)">准备中...</div></div>`);
 
   const ar=portrait?'9:16':'16:9';
-  const dur=Math.min(8,Math.max(4,Math.round(shot.endTime-shot.startTime)));
+  const shotLen=shot.endTime-shot.startTime;const dur=Math.min(8,Math.max(4,shotLen>=4?Math.round(shotLen):4));
   const imgPrompt=`${shot.description}. ${portrait?'Vertical 9:16':'Landscape 16:9'}. ${style}. Photorealistic, no text, no watermark.`;
   const vidPrompt=`${shot.description}. ${shot.copywriting?'Scene: '+shot.copywriting+'.':''} ${style}. ${ar} format. ${dur} seconds. Smooth camera movement. No text overlays. Baby clothing commercial.`;
 
@@ -770,11 +770,17 @@ function copyMat(el,i,ci){
 function matToAI(i,ci){
   const cat=MKEYS[ci],r=MATS[cat]?.records[i];if(!r)return;
   const keys=Object.keys(r),name=r[keys[0]]||'';
-  const pts=Object.entries(r).filter(([k])=>k.includes('卖点')||k.includes('话术')||k.includes('钩子')).map(([k,v])=>`${k}: ${v}`).join('\n');
+  // 抓取所有有价值的字段：卖点、话术、钩子、核心逻辑、框架名、逻辑等
+  const valueKeys=['卖点','话术','钩子','核心逻辑','框架','逻辑','描述','内容','文案','场景','痛点','CTA','行动'];
+  const pts=Object.entries(r)
+    .filter(([k])=>k!=='_c'&&keys.indexOf(k)>0&&valueKeys.some(vk=>k.includes(vk)))
+    .map(([k,v])=>`${k}: ${v}`).join('\n');
+  // 如果没抓到，把所有非标题字段都填进去
+  const fallback=Object.entries(r).filter(([k])=>k!=='_c'&&keys.indexOf(k)>0&&r[k]).map(([k,v])=>`${k}: ${v}`).join('\n');
   const aud=r['适用品类']||r['目标用户']||'';
-  if(name)document.getElementById('pName').value=name.substring(0,60);
-  if(pts)document.getElementById('pPoints').value=pts.substring(0,400);
-  if(aud)document.getElementById('pAud').value=aud.substring(0,80);
+  if(name)document.getElementById('pName').value=name.substring(0,80);
+  document.getElementById('pPoints').value=(pts||fallback).substring(0,600);
+  if(aud)document.getElementById('pAud').value=aud.substring(0,100);
   switchTab('ai');
 }
 
