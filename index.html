@@ -357,7 +357,10 @@ function updateGStatus(){
 async function callProxy(body){
   const r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const d=await r.json().catch(()=>({error:'Parse error '+r.status}));
-  if(!r.ok||d.error){throw new Error(d.error||'Proxy '+r.status);}
+  if(!r.ok||d.error){
+    const errMsg=typeof d.error==='object'?(d.error.message||JSON.stringify(d.error)):String(d.error||'Proxy '+r.status);
+    throw new Error(errMsg);
+  }
   return d;
 }
 
@@ -433,14 +436,14 @@ async function extractFrames(file){
     const v=document.createElement('video');v.src=URL.createObjectURL(file);v.muted=true;
     v.onloadedmetadata=async()=>{
       const dur=v.duration,n=Math.min(15,Math.max(8,Math.floor(dur/2)));
-      const frames=[],cv=document.createElement('canvas');cv.width=320;cv.height=180;
+      const frames=[],cv=document.createElement('canvas');cv.width=240;cv.height=135;
       const ctx=cv.getContext('2d');
       for(let i=0;i<n;i++){
         const t=(dur/n)*i+0.3;
         await new Promise(r=>{
           v.currentTime=Math.min(t,dur-0.1);
           v.onseeked=()=>{
-            try{ctx.drawImage(v,0,0,320,180);frames.push({time:t,url:cv.toDataURL('image/jpeg',0.65)});}
+            try{ctx.drawImage(v,0,0,240,135);frames.push({time:t,url:cv.toDataURL('image/jpeg',0.35)});}
             catch(e){frames.push({time:t,url:null});}
             r();
           };
@@ -486,7 +489,7 @@ async function startAnalysis(file){
 
   let result;
   try{
-    const imgs=frames.filter(f=>f.url).slice(0,8).map(f=>({
+    const imgs=frames.filter(f=>f.url).slice(0,3).map(f=>({
       type:'image',source:{type:'base64',media_type:'image/jpeg',data:f.url.split(',')[1]}
     }));
     const content=imgs.length>0?[...imgs,{type:'text',text:buildPrompt(frames.length,dur)}]:[{type:'text',text:buildPrompt(frames.length,dur)}];
