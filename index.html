@@ -34,7 +34,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .fgrid{width:100%;max-width:680px;margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fc{background:var(--bg2);border:1px solid var(--b);border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start}
 .fc-icon{font-size:22px;flex-shrink:0}.fc-name{font-size:13px;font-weight:700;margin-bottom:4px}.fc-desc{font-size:12px;color:var(--t2);line-height:1.5}
-.ana-pg{display:none;flex-direction:column;align-items:center;padding:80px 24px;position:relative;z-index:1}
+.ana-pg{flex-direction:column;align-items:center;padding:80px 24px;position:relative;z-index:1}
 .spinner{width:64px;height:64px;border-radius:50%;border:3px solid var(--b);border-top-color:var(--ac);animation:spin .9s linear infinite;margin-bottom:22px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .pb-wrap{width:320px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:20px}
@@ -45,7 +45,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .sdot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
 .si.done .sdot{background:var(--green)}.si.active .sdot{background:var(--ac);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
-.res-pg{display:none;position:relative;z-index:1;padding:22px 24px}
+.res-pg{position:relative;z-index:1;padding:22px 24px}
 .mg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
 .mc{background:var(--bg2);border:1px solid var(--b);border-radius:13px;padding:16px 14px}
 .mv{font-size:28px;font-weight:800;color:var(--gold);margin-bottom:4px}
