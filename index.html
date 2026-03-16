@@ -125,7 +125,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v10</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v11</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -296,6 +296,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
       </div>
       <button class="gbtn2" id="vBtn" onclick="genVideos()"><span>🎬</span><span>开始生成视频</span></button>
+      <button class="gbtn2" id="imgBtn" onclick="genSceneImages()" style="background:linear-gradient(135deg,#8b5cf6,#e84aff);margin-left:10px"><span>🖼️</span><span>只生成场景图</span></button>
+      <div style="font-size:11px;color:var(--t2);margin-top:-10px;margin-bottom:16px">↑ 不消耗 Veo 配额 · 用 Nano Banana Pro 生成 · 可下载保存</div>
       <div id="vOutput" style="display:none">
         <div style="font-size:14px;font-weight:700;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--b)">生成进度</div>
         <div id="vProg"></div>
@@ -715,6 +717,90 @@ function renderShotSel(){
   const shots=useSrc==='ai'&&aiScript?.shots?aiScript.shots:appData.shots;
   el.innerHTML=shots.map((s,i)=>{const t=gtc(s.type);return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:${t.bg};border:1px solid ${t.c}30;padding:5px 12px;border-radius:10px;font-size:12px;color:${t.c};font-weight:600"><input type="checkbox" checked data-idx="${i}" style="accent-color:${t.c}">#${s.id||i+1} ${s.type}</label>`;}).join('');
 }
+
+async function genSceneImages(){
+  if(!getGKey()){alert('请先在顶部 🔑 API Key 里配置 Gemini Key');return;}
+  if(!appData){alert('请先完成视频分析');return;}
+
+  const useSrc=document.querySelector('input[name="vidSrc"]:checked')?.value||'original';
+  let shots=[];
+  if(useSrc==='ai'){
+    if(!aiScript||!aiScript.shots||!aiScript.shots.length){alert('请先在「✨ AI改编脚本」Tab 生成AI脚本');return;}
+    shots=aiScript.shots;
+  }else{
+    shots=appData.shots;
+  }
+
+  // 只生成选中的镜头
+  const sel=Array.from(document.querySelectorAll('#shotSel input:checked')).map(cb=>parseInt(cb.dataset.idx)).filter(i=>!isNaN(i));
+  if(!sel.length){alert('请选择至少一个镜头');return;}
+  const selShots=sel.map(idx=>shots[idx]||shots[Math.min(idx,shots.length-1)]);
+
+  const style=document.getElementById('vStyle').value;
+  const portrait=document.getElementById('portrait').checked;
+  const btn=document.getElementById('imgBtn');
+  btn.disabled=true;btn.innerHTML='<span>⏳</span><span>生成中...</span>';
+  document.getElementById('vOutput').style.display='block';
+  document.getElementById('vProg').innerHTML='';
+
+  for(let i=0;i<selShots.length;i++){
+    const shot=selShots[i];
+    const cid='sc'+i;
+    const t=gtc(shot.type||'产品展示');
+    document.getElementById('vProg').insertAdjacentHTML('beforeend',
+      `<div id="${cid}" class="vcard">
+        <div class="vchdr">
+          <span style="background:${t.bg};color:${t.c};font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px">#${shot.id||i+1} ${shot.type||'镜头'}</span>
+          <span id="${cid}st" style="margin-left:auto;font-size:12px;color:var(--t2)">🔄 生成中...</span>
+        </div>
+        <div id="${cid}bd" style="font-size:13px;color:var(--t2)">准备中...</div>
+      </div>`
+    );
+    try{
+      const imgPrompt=`${shot.description}. ${portrait?'Vertical 9:16 portrait':'Landscape 16:9'}. ${style}. Photorealistic, high quality, no text, no watermark.`;
+      const nbParts=hasProdImgFn()
+        ?[{inlineData:{mimeType:productImgMime,data:productImgB64}},{text:`Based on this product image, generate a photorealistic scene: ${imgPrompt}. Keep the product appearance exactly the same.`}]
+        :[{text:`Generate a photorealistic image: ${imgPrompt}`}];
+
+      document.getElementById(cid+'st').textContent='🖼️ Nano Banana Pro 生成中...';
+      document.getElementById(cid+'bd').textContent='调用 Nano Banana Pro...';
+
+      const imgR=await callProxy({
+        __gemini:true,
+        model:'gemini-3-pro-image-preview',
+        body:{
+          contents:[{parts:nbParts}],
+          generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
+        }
+      });
+
+      let imgB64=null,imgMime='image/png';
+      for(const p of imgR.candidates?.[0]?.content?.parts||[]){
+        if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}
+      }
+
+      if(imgB64){
+        const ext=imgMime.includes('png')?'png':'jpg';
+        const dataUrl=`data:${imgMime};base64,${imgB64}`;
+        document.getElementById(cid+'st').textContent='✅ 生成完成！';
+        document.getElementById(cid+'bd').innerHTML=
+          `<img src="${dataUrl}" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:8px;display:block">
+           <a href="${dataUrl}" download="scene_${shot.id||i+1}.${ext}" style="color:var(--ac2);font-size:12px;margin-top:6px;display:inline-block">⬇ 下载场景图</a>
+           <span style="font-size:11px;color:var(--t2);margin-left:12px">${shot.description?.substring(0,40)||''}...</span>`;
+      }else{
+        document.getElementById(cid+'st').textContent='⚠️ 无图片输出';
+        document.getElementById(cid+'bd').textContent='Nano Banana Pro 未返回图片，请重试';
+      }
+    }catch(e){
+      document.getElementById(cid+'st').textContent='❌ 失败';
+      document.getElementById(cid+'bd').innerHTML=`<div style="color:var(--red);font-size:12px">${e.message}</div>`;
+    }
+  }
+
+  btn.disabled=false;btn.innerHTML='<span>🖼️</span><span>只生成场景图</span>';
+}
+
+function hasProdImgFn(){return productImgB64&&productImgB64.length>0;}
 
 async function genVideos(){
   if(!getGKey()){alert('请先在顶部 🔑 API Key 里配置 Gemini Key');return;}
