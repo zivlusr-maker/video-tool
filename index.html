@@ -125,7 +125,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v8</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v9</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -718,27 +718,24 @@ async function genOneVideo(shot,idx,style,portrait){
         if(pR.error) throw new Error(pR.error.message||pR.error);
         console.log('Veo done response:', JSON.stringify(pR).substring(0,500));
         const resp=pR.response||pR;
-        const vids=resp.generatedVideos||resp.videos||[];
+        // 兼容两种格式：generatedVideos 或 generateVideoResponse.generatedSamples
+        const vids=resp.generatedVideos||resp.videos||
+                   resp.generateVideoResponse?.generatedSamples||[];
         const prev=getBd();
         if(vids.length){
           const vid=vids[0];
           // 参考n8n工作流：视频文件名存在 vid.video.name 或 vid.name 里
-          const videoName=vid.video?.name||vid.name||'';
           const uri=vid.video?.uri||vid.uri||'';
           const b64=vid.video?.bytesBase64Encoded||vid.bytesBase64Encoded||'';
           const gk=getGKey();
-          if(videoName){
-            // 用n8n同款方式下载：files/{name}:download?alt=media&key=
-            const fileId=videoName.replace('files/','');
-            const dlUrl=`https://generativelanguage.googleapis.com/v1beta/files/${fileId}:download?alt=media&key=${gk}`;
-            setSt('✅ 视频生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${dlUrl}"></video><br><a href="${dlUrl}" download="shot${shot.id}.mp4" style="color:var(--ac2);font-size:12px">⬇ 下载</a>`);
-          } else if(uri){
+          if(uri){
+            // URI已经是完整的download链接，只需加key
             const fullUri=uri.includes('key=')?uri:(uri.includes('?')?uri+'&key='+gk:uri+'?key='+gk);
             setSt('✅ 视频生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${fullUri}"></video><br><a href="${fullUri}" download="shot${shot.id}.mp4" style="color:var(--ac2);font-size:12px">⬇ 下载</a>`);
           } else if(b64){
             setSt('✅ 生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="data:video/mp4;base64,${b64}"></video>`);
           } else {
-            setSt('⚠️ 有视频对象但无法获取内容: '+JSON.stringify(vid).substring(0,150),prev);
+            setSt('⚠️ 有视频对象但无URI: '+JSON.stringify(vid).substring(0,150),prev);
           }
         } else {
           setSt('⚠️ 无输出，API响应: '+JSON.stringify(resp).substring(0,300),prev);
