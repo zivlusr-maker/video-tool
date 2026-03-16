@@ -125,7 +125,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v6</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -658,7 +658,7 @@ async function genOneVideo(shot,idx,style,portrait){
   prog.insertAdjacentHTML('beforeend',`<div id="${cid}" class="vcard"><div class="vchdr"><span style="background:${t.bg};color:${t.c};font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px">#${shot.id} ${shot.type}</span><span style="font-size:12px;color:var(--t2)">${shot.startTime.toFixed(1)}s–${shot.endTime.toFixed(1)}s</span><span id="${cid}st" style="margin-left:auto;font-size:12px;color:var(--t2)">🔄 启动...</span></div><div id="${cid}bd" style="font-size:13px;color:var(--t2)">准备中...</div></div>`);
 
   const ar=portrait?'9:16':'16:9';
-  const shotLen=parseFloat(shot.endTime)-parseFloat(shot.startTime);const dur=Math.min(8,Math.max(4,Math.ceil(shotLen<4?4:shotLen>8?8:shotLen)));
+  const shotSec=parseFloat(shot.endTime)-parseFloat(shot.startTime);const dur=shotSec>=8?8:shotSec>=7?7:shotSec>=6?6:shotSec>=5?5:4; // 严格整数4-8
   const imgPrompt=`${shot.description}. ${portrait?'Vertical 9:16':'Landscape 16:9'}. ${style}. Photorealistic, no text, no watermark.`;
   const vidPrompt=`${shot.description}. ${shot.copywriting?'Scene: '+shot.copywriting+'.':''} ${style}. ${ar} format. ${dur} seconds. Smooth camera movement. No text overlays. Baby clothing commercial.`;
 
@@ -673,7 +673,7 @@ async function genOneVideo(shot,idx,style,portrait){
     setSt('🖼️ Nano Banana 2 生成首帧...','');
     const imgR=await callProxy({
       __gemini:true,
-      model:'gemini-3.1-flash-image-preview',
+      model:'gemini-3-pro-image-preview',
       body:{
         contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],
         generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
@@ -700,7 +700,7 @@ async function genOneVideo(shot,idx,style,portrait){
       __veo:true,
       model:'veo-3.1-generate-preview',
       instances:[vInstance],
-      parameters:{aspectRatio:ar,durationSeconds:parseInt(dur),sampleCount:1,personGeneration:'allow_adult'}
+      parameters:{aspectRatio:ar,durationSeconds:dur,sampleCount:1,personGeneration:'allow_adult'}
     });
 
     if(vR.error) throw new Error(vR.error);
