@@ -125,7 +125,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v9</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v10</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -240,6 +240,42 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">🔑 Google API Key <span id="gkSt" style="font-size:11px;padding:2px 10px;border-radius:10px;background:rgba(255,82,82,0.12);color:var(--red)">未配置</span></div>
         <div style="font-size:12px;color:var(--t2)">在顶部 🔑 API Key 里填入 Gemini Key 即可用于视频生成</div>
       </div>
+      <!-- 产品图片上传 -->
+      <div class="vbox" id="prodImgBox">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          🖼️ 上传你的产品图片 <span style="font-size:11px;color:var(--t2);font-weight:400">（用于保持视频中产品一致性）</span>
+        </div>
+        <div id="prodImgDrop" onclick="document.getElementById('prodImgInp').click()"
+          style="border:2px dashed var(--b2);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3)"
+          ondragover="event.preventDefault();this.style.borderColor='var(--ac)'"
+          ondragleave="this.style.borderColor='var(--b2)'"
+          ondrop="onProdImgDrop(event)">
+          <div id="prodImgPreview" style="display:none;margin-bottom:8px">
+            <img id="prodImgThumb" style="max-height:120px;max-width:200px;border-radius:8px;object-fit:contain">
+          </div>
+          <div id="prodImgHint" style="font-size:13px;color:var(--t2)">📷 点击或拖拽上传产品图片（JPG/PNG）</div>
+        </div>
+        <input type="file" id="prodImgInp" accept="image/*" style="display:none" onchange="onProdImgSel(event)">
+      </div>
+
+      <!-- 脚本来源选择 -->
+      <div class="vbox">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">📋 视频内容来源</div>
+        <div style="display:flex;gap:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--b2);padding:10px 16px;border-radius:10px;flex:1;transition:all .2s" id="srcOpt1">
+            <input type="radio" name="vidSrc" value="original" checked onchange="updateSrcUI()" style="accent-color:var(--ac)">
+            <div><div style="font-size:13px;font-weight:600">爆款视频原始镜头</div><div style="font-size:11px;color:var(--t2)">按原视频分镜结构生成</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--b2);padding:10px 16px;border-radius:10px;flex:1;transition:all .2s" id="srcOpt2">
+            <input type="radio" name="vidSrc" value="ai" onchange="updateSrcUI()" style="accent-color:var(--ac)">
+            <div><div style="font-size:13px;font-weight:600">AI改编脚本镜头 <span id="aiScriptBadge" style="display:none;font-size:10px;background:rgba(46,194,126,0.15);color:#2ec27e;padding:1px 8px;border-radius:8px;font-weight:700">已生成</span></div><div style="font-size:11px;color:var(--t2)">按你的产品AI改编脚本生成</div></div>
+          </label>
+        </div>
+        <div id="aiScriptWarn" style="display:none;margin-top:10px;font-size:12px;color:var(--gold);background:rgba(240,168,50,0.08);padding:8px 12px;border-radius:8px">
+          ⚠️ 请先在「✨ AI改编脚本」Tab 生成脚本，再选择此选项
+        </div>
+      </div>
+
       <div class="vbox">
         <div style="font-size:13px;font-weight:600;margin-bottom:12px">选择镜头</div>
         <div id="shotSel" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><div style="font-size:13px;color:var(--t2)">请先完成视频分析</div></div>
@@ -299,7 +335,7 @@ const MKEYS=Object.keys(MATS);
 // ============================================================
 // 状态
 // ============================================================
-let appData=null, curCat=MKEYS[0], matQ='', curModel=localStorage.getItem('vvt_model')||'gemini';
+let appData=null, aiScript=null, productImgB64=null, productImgMime='image/jpeg', curCat=MKEYS[0], matQ='', curModel=localStorage.getItem('vvt_model')||'gemini';
 const AK='vvt_akey', GK='vvt_gkey';
 const getAKey=()=>localStorage.getItem(AK)||'';
 const getGKey=()=>localStorage.getItem(GK)||'';
@@ -621,6 +657,8 @@ async function genScript(){
   btn.disabled=false;btn.innerHTML='<span>✨</span><span>重新生成</span>';
 }
 function renderAI(r){
+  aiScript=r; // 保存AI改编脚本供视频生成使用
+  updateAIScriptBadge();
   document.getElementById('aiOut').classList.add('on');
   document.getElementById('aiContent').innerHTML=r.shots.map(s=>{const t=gtc(s.type);return`<div class="aishot"><div class="ashhdr"><span class="ashnum">镜头${s.id}</span><span class="ashb" style="background:${t.bg};color:${t.c}">${s.type}</span><span class="ashdur">${s.duration}s</span></div><div class="ashdesc">${s.description}</div><div class="ashcopy"><span class="ack">口播：</span>${s.copywriting}</div></div>`;}).join('');
 }
@@ -632,22 +670,78 @@ function copyAll(){
 // ============================================================
 // 视频生成（Nano Banana 2 + Veo 3.1）
 // ============================================================
+function onProdImgDrop(e){
+  e.preventDefault();
+  document.getElementById('prodImgDrop').style.borderColor='var(--b2)';
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))loadProdImg(f);
+}
+function onProdImgSel(e){const f=e.target.files[0];if(f)loadProdImg(f);}
+function loadProdImg(file){
+  productImgMime=file.type||'image/jpeg';
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    productImgB64=dataUrl.split(',')[1];
+    document.getElementById('prodImgThumb').src=dataUrl;
+    document.getElementById('prodImgPreview').style.display='block';
+    document.getElementById('prodImgHint').textContent='✅ '+file.name+'（点击重新上传）';
+    document.getElementById('prodImgDrop').style.borderColor='var(--green)';
+  };
+  reader.readAsDataURL(file);
+}
+function updateSrcUI(){
+  const v=document.querySelector('input[name="vidSrc"]:checked')?.value;
+  const warn=document.getElementById('aiScriptWarn');
+  if(v==='ai'&&(!aiScript||!aiScript.shots)){
+    warn.style.display='block';
+  }else{
+    warn.style.display='none';
+  }
+  // 更新选中样式
+  document.getElementById('srcOpt1').style.borderColor=v==='original'?'var(--ac)':'var(--b2)';
+  document.getElementById('srcOpt2').style.borderColor=v==='ai'?'var(--ac)':'var(--b2)';
+  // 切换后刷新镜头选择列表
+  renderShotSel();
+}
+function updateAIScriptBadge(){
+  const badge=document.getElementById('aiScriptBadge');
+  if(badge)badge.style.display=aiScript?'inline':'none';
+}
+
 function renderShotSel(){
   const el=document.getElementById('shotSel');if(!el||!appData)return;
-  el.innerHTML=appData.shots.map((s,i)=>{const t=gtc(s.type);return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:${t.bg};border:1px solid ${t.c}30;padding:5px 12px;border-radius:10px;font-size:12px;color:${t.c};font-weight:600"><input type="checkbox" checked data-idx="${i}" style="accent-color:${t.c}">#${s.id} ${s.type}</label>`;}).join('');
+  const useSrc=document.querySelector('input[name="vidSrc"]:checked')?.value||'original';
+  const shots=useSrc==='ai'&&aiScript?.shots?aiScript.shots:appData.shots;
+  el.innerHTML=shots.map((s,i)=>{const t=gtc(s.type);return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:${t.bg};border:1px solid ${t.c}30;padding:5px 12px;border-radius:10px;font-size:12px;color:${t.c};font-weight:600"><input type="checkbox" checked data-idx="${i}" style="accent-color:${t.c}">#${s.id||i+1} ${s.type}</label>`;}).join('');
 }
 
 async function genVideos(){
   if(!getGKey()){alert('请先在顶部 🔑 API Key 里配置 Gemini Key');return;}
   if(!appData){alert('请先完成视频分析');return;}
-  const sel=Array.from(document.querySelectorAll('#shotSel input:checked')).map(cb=>parseInt(cb.dataset.idx)).filter(i=>!isNaN(i));
-  if(!sel.length){alert('请选择至少一个镜头');return;}
+  const useSrc=document.querySelector('input[name="vidSrc"]:checked')?.value||'original';
+  let shotsToGen=[];
+  if(useSrc==='ai'){
+    if(!aiScript||!aiScript.shots||!aiScript.shots.length){alert('请先在「✨ AI改编脚本」Tab 生成AI脚本');return;}
+    const sel=Array.from(document.querySelectorAll('#shotSel input:checked')).map(cb=>parseInt(cb.dataset.idx)).filter(i=>!isNaN(i));
+    if(!sel.length){alert('请选择至少一个镜头');return;}
+    shotsToGen=sel.map(idx=>({
+      ...aiScript.shots[idx]||aiScript.shots[Math.min(idx,aiScript.shots.length-1)],
+      startTime:appData.shots[idx]?.startTime||0,
+      endTime:appData.shots[idx]?.endTime||5,
+      id:idx+1
+    }));
+  }else{
+    const sel=Array.from(document.querySelectorAll('#shotSel input:checked')).map(cb=>parseInt(cb.dataset.idx)).filter(i=>!isNaN(i));
+    if(!sel.length){alert('请选择至少一个镜头');return;}
+    shotsToGen=sel.map(idx=>appData.shots[idx]);
+  }
   const style=document.getElementById('vStyle').value;
   const portrait=document.getElementById('portrait').checked;
   const btn=document.getElementById('vBtn');btn.disabled=true;btn.innerHTML='<span>⏳</span><span>生成中...</span>';
   document.getElementById('vOutput').style.display='block';
   document.getElementById('vProg').innerHTML='';
-  for(const idx of sel) await genOneVideo(appData.shots[idx],idx,style,portrait);
+  for(let i=0;i<shotsToGen.length;i++) await genOneVideo(shotsToGen[i],i,style,portrait);
   btn.disabled=false;btn.innerHTML='<span>🎬</span><span>开始生成视频</span>';
 }
 
@@ -661,6 +755,8 @@ async function genOneVideo(shot,idx,style,portrait){
   const shotSec=parseFloat(shot.endTime)-parseFloat(shot.startTime);const dur=shotSec>=8?8:shotSec>=7?7:shotSec>=6?6:shotSec>=5?5:4; // 严格整数4-8
   const imgPrompt=`${shot.description}. ${portrait?'Vertical 9:16':'Landscape 16:9'}. ${style}. Photorealistic, no text, no watermark.`;
   const vidPrompt=`${shot.description}. ${shot.copywriting?'Scene: '+shot.copywriting+'.':''} ${style}. ${ar} format. ${dur} seconds. Smooth camera movement. No text overlays. Baby clothing commercial.`;
+  // 如果有上传的产品图片，优先用产品图作为首帧参考
+  const hasProdImg = productImgB64 && productImgB64.length > 0;
 
   function setSt(st,bd){
     const s=document.getElementById(cid+'st');if(s)s.textContent=st;
@@ -671,11 +767,14 @@ async function genOneVideo(shot,idx,style,portrait){
   try{
     // Step 1: Nano Banana 2 生成首帧
     setSt('🖼️ Nano Banana 2 生成首帧...','');
+    const nbParts = hasProdImg
+      ? [{inlineData:{mimeType:productImgMime,data:productImgB64}},{text:`Based on this product image, generate a photorealistic scene: ${imgPrompt}. Keep the product appearance exactly the same.`}]
+      : [{text:`Generate a photorealistic image: ${imgPrompt}`}];
     const imgR=await callProxy({
       __gemini:true,
       model:'gemini-3-pro-image-preview',
       body:{
-        contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],
+        contents:[{parts:nbParts}],
         generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
       }
     });
