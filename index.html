@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>爆款短视频拆解工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0f14;--bg2:#141720;--bg3:#1c2030;--bg4:#242840;--b:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.14);--t:#e8eaf0;--t2:#8b90a8;--t3:#555a72;--ac:#4f6ef7;--ac2:#6c85ff;--gold:#f0a832;--green:#2ec27e;--pink:#e84aff;--red:#ff5252}
+body{background:var(--bg);color:var(--t);font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(79,110,247,0.07),transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(232,74,255,0.04),transparent 50%);pointer-events:none;z-index:0}
+.hdr{position:sticky;top:0;z-index:100;background:rgba(13,15,20,0.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--b);padding:0 24px;display:flex;align-items:center;height:56px;gap:12px}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--ac),var(--pink));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:14px;font-weight:700}.logo-sub{font-size:11px;color:var(--t2)}
+.hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.hbtn{background:transparent;border:1px solid var(--b2);color:var(--t2);padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;transition:all .2s}
+.hbtn:hover{border-color:var(--ac);color:var(--ac2)}
+.mwrap{display:flex;gap:3px;background:var(--bg3);border:1px solid var(--b);border-radius:20px;padding:3px}
+.mbtn{border:1px solid transparent;border-radius:16px;padding:4px 14px;font-size:12px;cursor:pointer;background:transparent;color:var(--t2);transition:all .2s}
+#keyBanner{display:none;background:rgba(79,110,247,0.07);border-bottom:1px solid rgba(79,110,247,0.18);padding:10px 24px;position:relative;z-index:99}
+.krow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:860px;margin:0 auto}
+.ki{flex:1;min-width:180px;background:var(--bg3);border:1px solid var(--b2);border-radius:8px;padding:7px 12px;color:var(--t);font-size:13px;outline:none;font-family:monospace}
+.ki:focus{border-color:var(--ac)}
+.ksave{border:none;border-radius:8px;padding:7px 18px;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.upload-pg{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:60px 24px 48px}
+.pg-title{font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:10px;text-align:center;background:linear-gradient(135deg,var(--t),#a8b0d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.pg-sub{font-size:14px;color:var(--t2);margin-bottom:48px;text-align:center}
+.dz{width:100%;max-width:680px;border:2px dashed var(--b2);border-radius:20px;background:var(--bg2);padding:60px 40px;display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;transition:all .3s}
+.dz:hover,.dz.drag{border-color:var(--ac);background:rgba(79,110,247,0.05)}
+.dz-icon{width:68px;height:68px;border-radius:16px;background:rgba(79,110,247,0.1);border:1px solid rgba(79,110,247,0.18);display:flex;align-items:center;justify-content:center;font-size:30px}
+.dz-title{font-size:18px;font-weight:700}.dz-hint{font-size:13px;color:var(--t2)}
+#selFile{font-size:13px;color:var(--ac2);display:none;font-weight:600}
+#fileInp{display:none}
+.fgrid{width:100%;max-width:680px;margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fc{background:var(--bg2);border:1px solid var(--b);border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start}
+.fc-icon{font-size:22px;flex-shrink:0}.fc-name{font-size:13px;font-weight:700;margin-bottom:4px}.fc-desc{font-size:12px;color:var(--t2);line-height:1.5}
+.ana-pg{flex-direction:column;align-items:center;padding:80px 24px;position:relative;z-index:1}
+.spinner{width:64px;height:64px;border-radius:50%;border:3px solid var(--b);border-top-color:var(--ac);animation:spin .9s linear infinite;margin-bottom:22px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pb-wrap{width:320px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:20px}
+.pb{height:100%;background:linear-gradient(90deg,var(--ac),var(--pink));border-radius:2px;transition:width .5s;width:0}
+.steps{display:flex;flex-direction:column;gap:10px;margin-top:20px;width:320px}
+.si{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t3)}
+.si.done{color:var(--green)}.si.active{color:var(--t)}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
+.si.done .sdot{background:var(--green)}.si.active .sdot{background:var(--ac);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.res-pg{position:relative;z-index:1;padding:22px 24px}
+.mg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.mc{background:var(--bg2);border:1px solid var(--b);border-radius:13px;padding:16px 14px}
+.mv{font-size:28px;font-weight:800;color:var(--gold);margin-bottom:4px}
+.ml{font-size:13px;font-weight:600;margin-bottom:2px}.mh{font-size:11px;color:var(--t2)}
+.tip{background:rgba(240,168,50,0.07);border:1px solid rgba(240,168,50,0.18);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:#ffd27a}
+.tabs{display:flex;margin-bottom:20px;border-bottom:1px solid var(--b);overflow-x:auto}
+.tabs::-webkit-scrollbar{height:0}
+.tab{padding:10px 18px;font-size:13px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;flex-shrink:0;margin-bottom:-1px}
+.tab:hover{color:var(--t)}.tab.on{color:var(--ac2);border-bottom-color:var(--ac2);font-weight:600}
+.sw{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.sw::-webkit-scrollbar{height:4px}.sw::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.sh{flex-shrink:0;width:164px;cursor:pointer}
+.sh-t{width:164px;height:92px;border-radius:10px;background:var(--bg3);border:2px solid var(--b);overflow:hidden;position:relative;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.sh:hover .sh-t{border-color:var(--ac)}
+.sh-t img{width:100%;height:100%;object-fit:cover}
+.sh-tag{position:absolute;top:6px;left:6px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800}
+.sh-num{position:absolute;top:6px;right:6px;font-size:11px;color:#fff;background:rgba(0,0,0,.7);padding:2px 7px;border-radius:6px}
+.sh-time{font-size:11px;color:var(--t2);margin-top:6px;text-align:center}
+.sh-lbl{font-size:12px;font-weight:700;margin-top:3px;text-align:center}
+.tbrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.tb{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.stbl{width:100%;border-collapse:collapse}
+.stbl th{text-align:left;padding:10px 14px;font-size:12px;color:var(--t2);border-bottom:1px solid var(--b);font-weight:600;background:var(--bg2)}
+.stbl td{padding:13px 14px;font-size:13px;border-bottom:1px solid var(--b);vertical-align:top;line-height:1.6}
+.stbl tr:hover td{background:rgba(79,110,247,0.04)}
+.sbar{height:50px;border-radius:12px;overflow:hidden;display:flex;margin-bottom:10px}
+.ss{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;min-width:0}
+.sdet{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.scard{background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:14px}
+.sc-t{font-size:12px;font-weight:700;margin-bottom:4px}.sc-n{font-size:22px;font-weight:800}.sc-p{font-size:11px;color:var(--t2);margin-top:2px}
+.sins{margin-top:18px;background:var(--bg2);border:1px solid var(--b);border-radius:13px;padding:18px}
+.aiform{background:var(--bg2);border:1px solid var(--b);border-radius:14px;padding:22px;margin-bottom:18px}
+.flbl{font-size:13px;color:var(--t2);margin-bottom:7px;display:block;font-weight:500}
+.finp,.ftxa{width:100%;background:var(--bg3);border:1px solid var(--b2);border-radius:8px;padding:10px 14px;color:var(--t);font-size:14px;outline:none;transition:border-color .2s;font-family:inherit;display:block;margin-bottom:14px}
+.finp:focus,.ftxa:focus{border-color:var(--ac)}
+.ftxa{resize:vertical;min-height:80px}
+.gbtn{background:linear-gradient(135deg,var(--ac),#8b5cf6);border:none;border-radius:10px;padding:12px 28px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-top:8px}
+.gbtn:hover{opacity:.87}.gbtn:disabled{opacity:.4;cursor:not-allowed}
+.aiout{background:var(--bg2);border:1px solid var(--b);border-radius:14px;padding:22px;display:none;margin-top:18px}
+.aiout.on{display:block}
+.aohdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--b)}
+.aotitle{font-size:15px;font-weight:700}
+.copyall{background:transparent;border:1px solid var(--b2);color:var(--t2);padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer}
+.copyall:hover{border-color:var(--ac);color:var(--ac2)}
+.aishot{border-bottom:1px solid var(--b);padding:14px 0}
+.aishot:last-child{border-bottom:none;padding-bottom:0}
+.ashhdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ashnum{font-size:13px;font-weight:800;color:var(--gold)}
+.ashb{font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700}
+.ashdur{font-size:12px;color:var(--t3)}
+.ashdesc{font-size:13px;line-height:1.7;margin-bottom:6px}
+.ashcopy{font-size:12px;color:var(--t2);line-height:1.6}
+.ack{color:var(--ac2);font-weight:600;margin-right:4px}
+.vbox{background:var(--bg2);border:1px solid var(--b);border-radius:13px;padding:18px;margin-bottom:16px}
+.vcard{background:var(--bg2);border:1px solid var(--b);border-radius:13px;padding:16px;margin-bottom:12px}
+.vchdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.gbtn2{background:linear-gradient(135deg,#4285f4,#0f9d58);border:none;border-radius:10px;padding:12px 28px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-bottom:18px}
+.gbtn2:hover{opacity:.87}.gbtn2:disabled{opacity:.4;cursor:not-allowed}
+.mcats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.mcat{border:1px solid var(--b);background:var(--bg2);color:var(--t2);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.mcard{background:var(--bg2);border:1px solid var(--b);border-radius:13px;padding:16px;cursor:pointer;transition:all .2s}
+.mcard:hover{border-color:var(--b2);transform:translateY(-1px)}
+.mttl{font-size:13px;font-weight:700;margin-bottom:8px;line-height:1.5}
+.mrow{font-size:12px;color:var(--t2);margin-bottom:3px;display:flex;gap:8px}
+.mk{color:var(--t3);min-width:56px;flex-shrink:0;font-size:11px}.mv2{color:var(--t)}
+.muse{display:inline-block;font-size:11px;padding:2px 10px;border-radius:10px;background:rgba(79,110,247,0.12);color:var(--ac2);font-weight:600;margin-top:6px}
+.expbtn{display:flex;align-items:center;gap:12px;width:100%;background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:16px 20px;cursor:pointer;transition:all .2s;margin-bottom:10px;color:var(--t);font-size:14px;font-weight:600;text-align:left}
+.expbtn:hover{border-color:var(--b2);background:var(--bg3)}
+.eicon{font-size:20px;flex-shrink:0}.edesc{font-size:12px;color:var(--t2);font-weight:400;margin-top:2px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+@media(max-width:800px){.mg{grid-template-columns:repeat(2,1fr)}.fgrid{grid-template-columns:1fr}.sdet{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo">🎬</div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v6</div></div>
+  <div class="hdr-r">
+    <div class="mwrap">
+      <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
+      <button class="mbtn" id="mb-gemini" onclick="setModel('gemini')">Gemini</button>
+    </div>
+    <button class="hbtn" id="keyBtn" style="display:none" onclick="toggleKey()">🔑 API Key</button>
+    <button class="hbtn" id="backBtn" style="display:none" onclick="resetApp()">← 重新分析</button>
+  </div>
+</div>
+<div id="keyBanner">
+  <div class="krow">
+    <span style="font-size:12px;color:var(--ac2);font-weight:700;flex-shrink:0">🔑 Claude Key</span>
+    <input class="ki" type="password" id="kiClaude" placeholder="sk-ant-api03-...">
+    <button class="ksave" style="background:linear-gradient(135deg,var(--ac),#8b5cf6)" onclick="saveKey('claude')">保存</button>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:11px;color:var(--ac2)">获取</a>
+    <div style="width:1px;height:20px;background:var(--b);flex-shrink:0"></div>
+    <span style="font-size:12px;color:#4285f4;font-weight:700;flex-shrink:0">🔑 Gemini Key</span>
+    <input class="ki" type="password" id="kiGemini" placeholder="AIzaSy...">
+    <button class="ksave" style="background:linear-gradient(135deg,#4285f4,#0f9d58)" onclick="saveKey('gemini')">保存</button>
+    <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size:11px;color:#4285f4">获取（免费）</a>
+  </div>
+</div>
+<div id="uploadPg" style="display:block">
+  <div class="upload-pg">
+    <div class="pg-title">爆款短视频拆解工具</div>
+    <div class="pg-sub">上传视频 · AI自动拆解结构 · 生成可复用的爆款脚本</div>
+    <div class="dz" id="dropZone"
+      onclick="document.getElementById('fileInp').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="onDrop(event)">
+      <div class="dz-icon">⬆</div>
+      <div class="dz-title">拖拽视频到这里，或点击上传</div>
+      <div class="dz-hint">支持 MP4 · MOV · AVI · WebM · 最大 500MB</div>
+      <div id="selFile"></div>
+    </div>
+    <input type="file" id="fileInp" accept="video/*" onchange="onFileSel(event)">
+    <div class="fgrid">
+      <div class="fc"><div class="fc-icon">📷</div><div><div class="fc-name">智能镜头拆解</div><div class="fc-desc">自动识别场景切换，提取关键帧，可视化分镜</div></div></div>
+      <div class="fc"><div class="fc-icon">📊</div><div><div class="fc-name">数据指标分析</div><div class="fc-desc">产品露出时长、首现时间等关键指标</div></div></div>
+      <div class="fc"><div class="fc-icon">📝</div><div><div class="fc-name">分镜脚本生成</div><div class="fc-desc">画面描述 + 文案口播完整表格</div></div></div>
+      <div class="fc"><div class="fc-icon">✨</div><div><div class="fc-name">AI改编新脚本</div><div class="fc-desc">输入产品信息，AI生成适配脚本</div></div></div>
+    </div>
+  </div>
+</div>
+<div id="anaPg" style="display:none">
+  <div class="ana-pg">
+    <div class="spinner"></div>
+    <div style="font-size:18px;font-weight:700">AI正在分析视频...</div>
+    <div style="font-size:13px;color:var(--t2);margin-top:8px" id="anaStatus">读取视频</div>
+    <div class="pb-wrap"><div class="pb" id="pbar"></div></div>
+    <div class="steps" id="stepsList"></div>
+  </div>
+</div>
+<div id="resPg" style="display:none">
+  <div class="res-pg">
+    <div class="mg" id="metGrid"></div>
+    <div class="tip" id="tipBar"></div>
+    <div class="tabs">
+      <div class="tab on" data-tab="shots" onclick="switchTab('shots')">📷 镜头截图</div>
+      <div class="tab" data-tab="script" onclick="switchTab('script')">📝 分镜脚本</div>
+      <div class="tab" data-tab="struct" onclick="switchTab('struct')">📊 结构分析</div>
+      <div class="tab" data-tab="ai" onclick="switchTab('ai')">✨ AI改编脚本</div>
+      <div class="tab" data-tab="video" onclick="switchTab('video')">🎬 生成视频</div>
+      <div class="tab" data-tab="mat" onclick="switchTab('mat')">📚 素材库</div>
+      <div class="tab" data-tab="export" onclick="switchTab('export')">⬇ 导出</div>
+    </div>
+    <div id="tab-shots">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700">🎬 全部镜头 <span id="shCnt" style="font-size:12px;color:var(--t2);font-weight:400"></span></div>
+        <div style="font-size:12px;color:var(--t2)">点击跳转到脚本行</div>
+      </div>
+      <div class="sw" id="shGrid"></div>
+      <div class="tbrow" id="typeRow"></div>
+    </div>
+    <div id="tab-script" style="display:none">
+      <div style="margin-bottom:14px;font-size:15px;font-weight:700">分镜脚本表格</div>
+      <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--b)">
+        <table class="stbl"><thead><tr><th>镜头</th><th>时间</th><th>类型</th><th>画面描述</th><th>截图</th><th>文案/口播</th></tr></thead><tbody id="scriptBody"></tbody></table>
+      </div>
+    </div>
+    <div id="tab-struct" style="display:none">
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px">视频结构可视化</div>
+      <div class="sbar" id="structBar"></div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:16px">宽度 = 时长占比</div>
+      <div class="sdet" id="structDet"></div>
+      <div class="sins" id="structIns"></div>
+    </div>
+    <div id="tab-ai" style="display:none">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px">✨ AI改编生成新脚本</div>
+      <div class="aiform">
+        <label class="flbl">产品名称 *</label>
+        <input class="finp" type="text" id="pName" placeholder="例如：有机棉婴儿连体衣...">
+        <label class="flbl">核心卖点（换行分隔）</label>
+        <textarea class="ftxa" id="pPoints" placeholder="例如：&#10;- GOTS有机棉认证&#10;- 磁吸扣10秒穿好"></textarea>
+        <label class="flbl" style="margin-top:14px">目标用户</label>
+        <input class="finp" id="pAud" placeholder="例如：美国25-35岁中高端妈妈" style="margin-bottom:0">
+        <button class="gbtn" id="genBtn" onclick="genScript()"><span>✨</span><span>AI生成新脚本</span></button>
+      </div>
+      <div class="aiout" id="aiOut">
+        <div class="aohdr"><div class="aotitle">🎬 AI改编脚本</div><button class="copyall" onclick="copyAll()">📋 复制全部</button></div>
+        <div id="aiContent"></div>
+      </div>
+    </div>
+    <div id="tab-video" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700">🎬 AI视频生成</div>
+        <div style="font-size:11px;color:var(--t2);background:var(--bg3);padding:3px 12px;border-radius:8px">Nano Banana 2 → Veo 3.1</div>
+      </div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:18px;line-height:1.7">用 <strong style="color:var(--ac2)">Nano Banana 2</strong> 生成首帧图，再由 <strong style="color:var(--gold)">Veo 3.1</strong> 生成完整视频。需要 Google AI 付费账户。</div>
+      <div class="vbox">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">🔑 Google API Key <span id="gkSt" style="font-size:11px;padding:2px 10px;border-radius:10px;background:rgba(255,82,82,0.12);color:var(--red)">未配置</span></div>
+        <div style="font-size:12px;color:var(--t2)">在顶部 🔑 API Key 里填入 Gemini Key 即可用于视频生成</div>
+      </div>
+      <div class="vbox">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">选择镜头</div>
+        <div id="shotSel" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><div style="font-size:13px;color:var(--t2)">请先完成视频分析</div></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:12px;color:var(--t2);margin-bottom:6px">画面风格</div>
+            <select class="finp" id="vStyle" style="margin-bottom:0;cursor:pointer">
+              <option value="cinematic realistic lifestyle">电商写实风 — 真实场景自然光</option>
+              <option value="warm lifestyle authentic">生活方式暖调 — 温馨家庭感</option>
+              <option value="clean minimal product">纯净简洁风 — 产品特写</option>
+              <option value="UGC authentic handheld">UGC真实风 — 手机拍摄感</option>
+              <option value="luxury premium high-end">高端奢华风</option>
+            </select>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);cursor:pointer;margin-bottom:2px">
+            <input type="checkbox" id="portrait" style="accent-color:var(--ac)"> 竖版9:16（TikTok）
+          </label>
+        </div>
+      </div>
+      <button class="gbtn2" id="vBtn" onclick="genVideos()"><span>🎬</span><span>开始生成视频</span></button>
+      <div id="vOutput" style="display:none">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--b)">生成进度</div>
+        <div id="vProg"></div>
+      </div>
+    </div>
+    <div id="tab-mat" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700">📚 产品素材库</div>
+        <div style="font-size:12px;color:var(--green);background:rgba(46,194,126,0.1);padding:4px 12px;border-radius:8px;border:1px solid rgba(46,194,126,0.2)">✅ 144条已内置</div>
+      </div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:14px">0-3岁中高端婴儿服饰 · 美国市场 · 点击卡片复制 · 点击「→ AI改编」填入表单</div>
+      <input class="finp" type="text" id="matSrch" placeholder="🔍 搜索关键词..." oninput="filterMat()" style="max-width:400px;margin-bottom:14px">
+      <div class="mcats" id="matCats"></div>
+      <div id="matGrid"></div>
+    </div>
+    <div id="tab-export" style="display:none">
+      <div style="font-size:15px;font-weight:700;margin-bottom:18px">导出分析报告</div>
+      <button class="expbtn" onclick="expCSV()"><span class="eicon">📊</span><div><div>导出分镜脚本 CSV</div><div class="edesc">可用Excel/飞书打开</div></div></button>
+      <button class="expbtn" onclick="expJSON()"><span class="eicon">📄</span><div><div>导出完整分析 JSON</div><div class="edesc">包含所有指标和脚本</div></div></button>
+      <button class="expbtn" onclick="expMD()"><span class="eicon">📝</span><div><div>导出分析报告 Markdown</div><div class="edesc">可粘贴到飞书、Notion</div></div></button>
+    </div>
+  </div>
+</div>
+<script>
+// ============================================================
+// 常量
+// ============================================================
+const TC={'痛点放大':{bg:'rgba(232,74,255,0.15)',c:'#e84aff'},'产品展示':{bg:'rgba(79,110,247,0.15)',c:'#6c85ff'},'使用场景':{bg:'rgba(56,217,245,0.15)',c:'#38d9f5'},'效果对比':{bg:'rgba(46,194,126,0.15)',c:'#2ec27e'},'行动引导':{bg:'rgba(240,168,50,0.15)',c:'#f0a832'},'节日特写':{bg:'rgba(255,82,82,0.15)',c:'#ff5252'},'钩子开场':{bg:'rgba(255,145,0,0.15)',c:'#ff9100'}};
+const SC={'痛点放大':'#e84aff','产品展示':'#6c85ff','使用场景':'#38d9f5','效果对比':'#2ec27e','行动引导':'#f0a832','节日特写':'#ff5252','钩子开场':'#ff9100'};
+function gtc(t){for(const k of Object.keys(TC))if(t&&t.includes(k))return TC[k];return{bg:'rgba(139,144,168,0.15)',c:'#8b90a8'}}
+const MATS={"竞品爆款拆解库（日常搜集）":{"headers":["视频标题/描述","账号名称","播放量","点赞量","视频链接","钩子话术","视频结构","使用BGM","可复用点","适用品类","采集日期","使用次数","效果评级"],"records":[{"视频标题/描述":"Snap vs Zipper Onesie — 3am diaper change race","账号名称":"@KyteBaby","播放量":"2.8M","点赞量":"385K","钩子话术":"Which onesie wins the 3am diaper change race? 🏁","视频结构":"对比测试","使用BGM":"Oh No - Kreepa","可复用点":"分屏对比格式，计时器叠加画面，妈妈真实疲惫表情增加共鸣感。可复用：任何需要AB对比的产品展示","适用品类":"婴儿连体衣","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"$5 onesie vs $35 organic onesie after 30 washes","账号名称":"@OrganicBabyLife","播放量":"4.1M","点赞量":"520K","钩子话术":"I washed a $5 onesie and a $35 organic onesie 30 times — the difference is SHOCKING 😱","视频结构":"对比测试","使用BGM":"Originalton - Suspense Build","可复用点":"30次洗涤实测对比极具说服力，展示起球/褪色/变形差异。可复用：任何需要证明品质差异的长期测试类内容","适用品类":"有机棉服饰, 婴儿连体衣","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Baby outfit of the day — 7 looks for 7 days","账号名称":"@TinyTrendsetters","播放量":"1.5M","点赞量":"198K","钩子话术":"7 days, 7 outfits — my baby is more stylish than me 😭","视频结构":"穿搭变装","使用BGM":"Glow Up - Stickle","可复用点":"快速卡点换装+日期字幕叠加，每套2-3秒。可复用：周穿搭系列，固定栏目化运营","适用品类":"婴儿外出服, 婴儿连体衣, 婴儿配饰","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Unboxing the cutest newborn gift set","账号名称":"@MonicaAndAndy","播放量":"890K","点赞量":"112K","钩子话术":"The PERFECT baby shower gift actually exists ✨🎁","视频结构":"开箱展示","使用BGM":"Aesthetic - Tollan Kim","可复用点":"慢动作拆礼盒+ASMR纸张声+逐件展示。可复用：任何礼盒类产品的开箱模板，强调仪式感和送礼属性","适用品类":"婴儿礼盒, 婴儿配饰","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Things I wish I knew before buying baby clothes","账号名称":"@MomHacksDaily","播放量":"3.2M","点赞量":"445K","钩子话术":"5 things NO ONE tells you about buying baby clothes 🚫","视频结构":"痛点揭露+解决方案","使用BGM":"Oh No - Kreepa","可复用点":"数字列表式结构（5个tips），每个tip配画面证据。可复用：任何\"X things you didn't know\"类知识科普内容","适用品类":"婴儿连体衣, 有机棉服饰, 婴儿外出服","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"POV: dressing your baby for grandma's house vs playground","账号名称":"@BabyOOTD","播放量":"2.1M","点赞量":"310K","钩子话术":"POV: your baby has a better wardrobe than you 💀","视频结构":"穿搭变装","使用BGM":"Make It Look Easy - Pop","可复用点":"POV场景切换+幽默文案，妈妈视角自嘲。可复用：任何多场景穿搭对比，用幽默拉近距离","适用品类":"婴儿外出服, 婴儿连体衣","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Testing if this onesie is really chemical-free — pH test","账号名称":"@CleanBabyClub","播放量":"5.6M","点赞量":"780K","钩子话术":"I tested 5 baby brands with pH strips — only ONE passed 😳","视频结构":"对比测试","使用BGM":"Suspense Dramatic","可复用点":"实验室测试感+数据可视化，pH试纸颜色对比极具视觉冲击。可复用：任何需要科学实证的安全性展示","适用品类":"有机棉服饰, 婴儿连体衣, 婴儿睡衣","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Why I stopped buying organic baby clothes (hear me out)","账号名称":"@HonestMomReviews","播放量":"6.3M","点赞量":"890K","钩子话术":"I stopped buying organic baby clothes — and here's why you should too 🤔","视频结构":"痛点揭露+解决方案","使用BGM":"Oh No - Kreepa","可复用点":"争议性标题引发好奇，实际内容是\"不是所有organic都真的organic\"，反转引出真正靠谱的认证。可复用：争议性钩子+知识反转的经典结构","适用品类":"有机棉服饰, 婴儿连体衣","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Matching mommy and baby outfits for family photos","账号名称":"@MiniMeStyle","播放量":"1.8M","点赞量":"256K","钩子话术":"Wait for the matching reveal... 👩‍👧 ✨","视频结构":"亲子互动","使用BGM":"Aesthetic - Tollan Kim","可复用点":"亲子同款先分别展示再合体亮相，转场用遮挡切换。可复用：任何亲子互动+仪式感时刻的内容模板","适用品类":"婴儿外出服, 婴儿配饰","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"My baby's closet tour — how I organize by size and season","账号名称":"@NestingMama","播放量":"1.2M","点赞量":"175K","钩子话术":"The most satisfying baby closet organization you'll see today 🤩","视频结构":"教程类","使用BGM":"Sunny Day - Acoustic","可复用点":"满足整理控审美+实用收纳技巧，评论区容易引发讨论。可复用：产品使用场景的延伸内容，增加品牌专业感","适用品类":"婴儿连体衣, 婴儿外出服, 婴儿睡衣, 婴儿配饰","采集日期":"2025-03-13","使用次数":"0"},{"视频标题/描述":"Happy Monday 🌻 i have lots of orders ready to go to my customers 💌 All handmade with lots of love and care 🥰","账号名称":"Babamoon (@babamoonbaby)","播放量":"226","点赞量":"12","视频链接":"==HYPERLINK(\"https://www.tiktok.com/@babamoonbaby/video/6950344083739036934\", \"TikTok视频\")","钩子话术":"Happy Monday 🌻 — 用轻松愉快的问候开场，展示大量手工订单准备发货的画面","视频结构":"开箱展示","使用BGM":"Happy - Pharrell Williams","可复用点":"1. 用订单堆叠画面展示销量社会证明；2. 强调handmade手工+love and care情感价值；3. 欢快BGM配合发货日常，塑造品牌温度","适用品类":"婴儿配饰","采集日期":"2025-03-13","使用次数":"0","效果评级":"⭐⭐⭐还行"}],"count":11},"成片记录库":{"headers":["时间","视频名字","结构公式","停·素材来源","病·素材来源","药·素材来源","信·素材来源","买·素材来源","使用BGM","发布平台"],"records":[{"时间":"2026-03-14","结构公式":"停 → 病 → 药 → 信 → 买","停·素材来源":"Does your baby break out in rashes from literally EVERY clothing brand?","药·素材来源":"真实拍摄给宝宝穿衣服的全过程——展示按扣设计如何快速穿脱，拉链护片如何保护下巴，信封领如何轻松套头。用计时器展示'10秒穿好',在真实场景中拍宝宝穿搭——公园草地上爬、daycare门口挥手、客厅地毯上玩玩具、超市购物车里坐着。环境必须真实有生活感，不要纯白背景棚拍","信·素材来源":"网红实测视频,好评截图,第三方检测报告,医生/专家推荐","买·素材来源":"买二送一（同系列）","使用BGM":"流行趋势音（随TikTok热门更新）,Aesthetic - Tollan Kim"},{"时间":"2026-03-15","结构公式":"停(好奇) → 病 → 药 → 信 → 买","停·素材来源":"30 washes. Zero pilling. Same softness as day one. Here's the proof.","病·素材来源":"冬天外出宝宝裹成球","药·素材来源":"微距镜头拍面料纹理，手指轻轻捏起有机棉面料展示柔软度和厚度。慢动作拍面料回弹，光线打出质感。配合婴儿小手触摸面料的画面","信·素材来源":"网红同款标签,第三方检测报告","买·素材来源":"妈妈VIP社群","使用BGM":"Jingle Bells (Modern Remix)"},{"时间":"2026-03-16","结构公式":"停(拆箱) → 药 → 药 → 信 → 买"}],"count":3},"框架结构库":{"headers":["短视频底层结构公式‼️","框架名称","开头钩子类型","核心逻辑","视频附件","适用场景","内容层级","难度","成片记录库"],"records":[{"短视频底层结构公式‼️":"停 → 病 → 药 → 信 → 买","框架名称":"经典痛点型","开头钩子类型":"痛点冲击","核心逻辑":" 开头用一个让人难受的痛点场景拉停留（猫咪不吃东西、干呕、蜷在角落，主人焦虑地蹲在旁边不知道怎么办）→\n  放大痛点，把这些日常动作定义成\"求救信号\"，让用户产生\"我家猫也这样！\"的共鸣 →  \n  产品作为解决方案出场，对比踩传统化毛膏（糖油刺激肠道=\"暴力拆迁\"），立我们的排\n  毛片（车前子壳，温和物理排出）→ 建信任：效果可视化（\"掰开粑粑肉眼可见裹着猫毛\"\n  ）/用户好评截图/\"已售出XX万件\"/宠物医生推荐/成分检测报告 →                  \n  促单话术收尾（\"不买就是对不起猫咪，点下方小黄车\"）","视频附件":"卖点怎么做可视化？.mp4","适用场景":"所有品类的起步阶段首选框架。特别适合痛点明确、效果可视化的产品（清洁、护肤、家居、母婴用品等）。","内容层级":"1.0 强痛点","难度":"入门","成片记录库":"2026/03/14"},{"短视频底层结构公式‼️":"药 → 停 → 病 → 药 → 信 → 买","框架名称":"效果前置型","开头钩子类型":"效果冲击","核心逻辑":"\n开头直接甩一个极致效果画面（比如洗了50次的衣服还是如新）→ 用户被视觉冲击停下来 → 再回头补痛点场景（“你的衣服洗几次就变形？”）→ 展开产品卖点（洗衣凝珠成分讲解）→ 社会证明建信任：用户好评截图/复购率数据/网红实测视频/品牌质检认证 → 促单收尾","适用场景":"效果可视化冲击力强的产品：清洁类（一喷就干净）、美妆（上脸效果）、食品（色泽/量感）、家居改造（前后对比）。","内容层级":"1.0 强痛点","难度":"入门"},{"短视频底层结构公式‼️":"停 → A vs B → 药 → 信 → 买","框架名称":"对比碾压型","开头钩子类型":"对比冲击","核心逻辑":"\n开头用分屏对比画面拉停留（比如左边普通拖把拖地满头汗，右边电动拖把轻松拖完）→ 让用户自己看见差距，不用你说服 → 展开产品卖点（“旋转喷水+自动拧干”）→ 社会证明建信任：权威检测报告/产品认证（UL、CE）/已售出××万件/用户好评截图 → 限时促单收尾","适用场景":"有明确竞品可对比的产品。品质差异大、效果差异可视化的品类：面料对比、清洁效果对比、耐用性对比。","内容层级":"通用","难度":"入门"},{"短视频底层结构公式‼️":"停(好奇) → 病 → 药 → 信 → 买","框架名称":"好奇悬念型","开头钩子类型":"好奇悬念","核心逻辑":"\n开头抛出一个反常识问题拉停留（“为什么美国妈妈从不用洗衣液？”）→ 用户为了知道答案会看完整条视频 → 揭晓原因（“因为她们用的是这个”）→ 展示产品效果和成分 → 社会证明建信任：用户评价截图/网红实测视频/销量数据（“美区销量第一”） → 促单收尾","适用场景":"产品本身效果不够视觉冲击、但有独特卖点故事的品类。适合知识密度高、需要解释才能理解价值的产品。","内容层级":"2.0 兴趣科普","难度":"进阶","成片记录库":"2026/03/15"},{"短视频底层结构公式‼️":"停(他人反应) → 药 → 病 → 信 → 买","框架名称":"社交证明型","开头钩子类型":"社交证明","核心逻辑":"\n开头展示别人的惊喜反应拉停留（比如朋友收到礼物尖叫+拥抱）→ 展示产品是什么（“就是这个…”）→ 补痛点（“每次送礼都不知道送什么”）→ 社会证明堆叠建信任：多人晒图好评/“已售出10万件”/网红推荐合集/品牌获奖记录 → 促单收尾","适用场景":"已有一定销量/好评的产品。适合有UGC内容积累、有达人合作素材、或评论区反馈好的产品。冷启动阶段不适用。","内容层级":"4.0 真实感","难度":"进阶"},{"短视频底层结构公式‼️":"停(真实场景) → 病 → 药 → 信 → 买","框架名称":"真实体验型(4.0)","开头钩子类型":"真实场景","核心逻辑":"\nvlog式开场拉停留（比如在厕房打扫卫生，随口说“这个东西我用了半年了”）→ 自然带出痛点（“以前每次清洁都要趪半天”）→ 产品自然融入使用场景（一喷一擦就干净）→ 社会证明建信任：“我已经回购3次了”/真实用户UGC视频/销量数据/产品质检认证 → 软促单（“链接放这儿了”）","适用场景":"中高客单价产品的信任建设。需要有合适的人像（达人/KOC/内部模特）。稳定期拓人群阶段的核心框架。","内容层级":"4.0 真实感","难度":"高阶"},{"短视频底层结构公式‼️":"停(知识钩子) → 病 → 药 → 信 → 买","框架名称":"科普权威型(2.0)","开头钩子类型":"知识科普","核心逻辑":"\n开头抛出一个冷知识拉停留（“90%的人洗脸都洗错了”）→ 科普原因引出痛点（“普通洁面乳会破坏皮肤屏障”）→ 产品作为专业解决方案出场（“氨基酸温和配方”）→ 社会证明建信任：成分表/检测报告/皮肤科医生推荐/产品认证（FDA/皮肤测试通过）/用户前后对比图 → 促单收尾","适用场景":"用户对品类认知不足需要教育的产品：成分类（有机棉vs普通棉）、功效类（某成分的作用）、技术类（特殊工艺）。","内容层级":"2.0 兴趣科普","难度":"进阶"},{"短视频底层结构公式‼️":"停 → 药 → 场景1 → 场景2 → 场景3 → 买","框架名称":"多场景轰炸型","开头钩子类型":"效果冲击","核心逻辑":"\n开头用一个最吸睛的使用场景拉停留（比如清洁喷雾一喷油烟机秒变干净）→ 快速切换场景：厕所水垢一喷就消→鞋子发黄一擦变白→车内异味一喷清新 → 场景越多，用户越容易找到“跟我有关”的那个 → 社会证明收尾：销量数据/用户好评合集/网红推荐 → 促单","适用场景":"多功能/多用途产品：清洁用品（厨房+浴室+车内）、收纳工具（衣柜+桌面+旅行）、服饰配件（多场景穿搭）。","内容层级":"通用","难度":"入门"},{"短视频底层结构公式‼️":"停(拆箱) → 药 → 药 → 信 → 买","框架名称":"开箱种草型","开头钩子类型":"开箱惊喜","核心逻辑":"\n开头用拆快递的仪式感拉停留（刀划开包裹的ASMR声音+精美包装特写）→ 一件件展示产品（“这个颜色绝了”）→ 上手展示质感/功能（“摸起来就是不一样”）→ 社会证明建信任：购买链接点击量/好评率数据/网红开箱视频/品牌质检认证 → 促单收尾","适用场景":"颜值型/礼盒型/套装型产品。适合新品上架期、节日促销期（送礼场景）。包装设计好看是前提。","内容层级":"通用","难度":"入门","成片记录库":"2026/03/16"},{"短视频底层结构公式‼️":"停(冲突) → 病 → 反转 → 药 → 买","框架名称":"剧情反转型(3.0)","开头钩子类型":"冲突反转","核心逻辑":"\n开头用非常规行为拉停留（比如一个人把口红往鞋子上涂）→ 制造悬念（“她疑似要毁了这双鞋？”）→ 反转揭晓：原来是用清洁喷雾一喷就干净了！→ 产品功能展示 → 社会证明建信任：网红同款实测/销量数据/用户好评截图/产品认证 → 促单收尾","适用场景":"品牌进入稳定期后做差异化内容。需要有演绎能力的人像（达人/模特）。适合追求内容丰富度、拓新人群的阶段。制作门槛较高。","内容层级":"3.0 冲突反转","难度":"高阶"}],"count":10},"号召行动库 CTA":{"headers":["CTA话术（英文）","中文翻译","视频阶段","行动类型","话术逻辑","配合权益","配合画面","适用品类","参考视频链接","成片记录库"],"records":[{"CTA话术（英文）":"Every morning is a wrestling match trying to dress my baby. Until I found these.","中文翻译":"每天早上给宝宝穿衣服都像打仗。直到我找到了这个","视频阶段":"开头（前3秒钩子）","行动类型":"痛点共鸣","话术逻辑":"直说妈妈真实处境，触发'我也是'的代入感，3秒内留住人","配合画面":"宝宝在换衣台上扽动挣扎的真实画面","适用品类":"婴儿连体衣"},{"CTA话术（英文）":"Does your baby break out in rashes from literally EVERY clothing brand?","中文翻译":"你家宝宝是不是穿什么牌子都起疹子？","视频阶段":"开头（前3秒钩子）","行动类型":"提问触发","话术逻辑":"用问句触发敏感肌宝妈对号入座，大脑会自动回答'是/不是'，从而停留观看","配合画面":"对着镜头真诚提问，手里拿着有机棉衣服","适用品类":"有机棉服饰","成片记录库":"2026/03/14"},{"CTA话术（英文）":"30 washes. Zero pilling. Same softness as day one. Here's the proof.","中文翻译":"洗了30次。零起球。和第一天一样柔软。证据在这","视频阶段":"开头（前3秒钩子）","行动类型":"结果前置","话术逻辑":"先亮结果制造好奇，观众想知道'是什么衣服'继续看下去","配合画面":"手持洗过30次的衣服展示，对比全新的","适用品类":"有机棉服饰, 婴儿连体衣","成片记录库":"2026/03/15"},{"CTA话术（英文）":"Cheap baby clothes are actually MORE expensive. Let me explain.","中文翻译":"便宜的婴儿衣服其实更贵。我来解释","视频阶段":"开头（前3秒钩子）","行动类型":"反常识","话术逻辑":"颠覆'贵=浪费'的认知，为中高端定价正名，观众想知道为什么","配合画面":"严肃表情→展示一堆洗坏的便宜衣服","适用品类":"婴儿连体衣, 有机棉服饰, 婴儿外出服"},{"CTA话术（英文）":"I've spent $2,000 on baby clothes this year. These $35 onesies are the only ones that survived.","中文翻译":"今年花了2000刀买婴儿衣服。只有这些35刀的连体衣活到了现在","视频阶段":"开头（前3秒钩子）","行动类型":"数字可信","话术逻辑":"具体数字增加可信度，'35刀但最持久'暗示性价比","配合画面":"一堆起球变形的衣服 vs 这件完好如新","适用品类":"婴儿连体衣, 有机棉服饰"},{"CTA话术（英文）":"Diaper blowout. In the middle of Target. No backup outfit. We've all been there.","中文翻译":"尿布爆了。在Target里。没带备用衣服。我们都经历过","视频阶段":"开头（前3秒钩子）","行动类型":"场景代入","话术逻辑":"具体场景+悬念，妈妈会想'然后呢？'，'我们都经历过'制造共鸣","配合画面":"在超市里手忙脚乱的画面","适用品类":"婴儿连体衣, 婴儿外出服"},{"CTA话术（英文）":"Watch this — left is a regular onesie after 10 washes. Right is ours. Same washing machine, same detergent.","中文翻译":"看这个——左边是普通连体衣洗10次后。右边是我们的。同一台洗衣机，同一种洗涤剂","视频阶段":"中间（卖点引导）","行动类型":"产品演示","话术逻辑":"真实对比测试，视觉证据无可辩驳，让品质可视化","配合画面":"分屏对比，一边起球缩水一边完好","适用品类":"有机棉服饰, 婴儿连体衣"},{"CTA话术（英文）":"It's not just 'organic cotton'. It's GOTS-certified, pre-shrunk, pH-balanced for newborn skin.","中文翻译":"不只是'有机棉'。是GOTS认证、预缩水处理、专为新生儿皮肤pH平衡的","视频阶段":"中间（卖点引导）","行动类型":"反常识","话术逻辑":"揭秘面料技术细节，建立专业感和信任，让妈妈觉得'学到了'","配合画面":"展示认证标签特写、pH试纸测试","适用品类":"有机棉服饰"},{"CTA话术（英文）":"Don't just take my word for it — 4,800 five-star reviews from real moms. Here's what they're saying.","中文翻译":"别只听我说——4800条五星评价来自真实妈妈。看她们怎么说","视频阶段":"中间（卖点引导）","行动类型":"用户证言","话术逻辑":"第三方妈妈群体背书比品牌自己说強10倍","配合画面":"滑动展示评论截图/妈妈UGC视频剪辑","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰"},{"CTA话术（英文）":"Feel this — this is what $8 polyester feels like on your baby's skin. Now feel THIS. Your baby knows the difference.","中文翻译":"摸摸这个——这就是8美金涤纶贴在宝宝皮肤上的感觉。再摸摸这个。你的宝宝能分辨","视频阶段":"中间（卖点引导）","行动类型":"对比引导","话术逻辑":"通过触感对比突出品质差异，触发妈妈保护本能","配合画面":"两种面料并排特写，手指触摸对比","适用品类":"有机棉服饰, 婴儿连体衣"},{"CTA话术（英文）":"Watch how fast I can change a diaper without taking off the whole outfit. Zipper design matters.","中文翻译":"看我换尿布多快——不用把整件衣服脱掉。拉链设计真的很重要","视频阶段":"中间（卖点引导）","行动类型":"产品演示","话术逻辑":"演示实用设计细节，让妈妈看到'方便'而不只是听到","配合画面":"真实换尿布过程演示，双向拉链特写","适用品类":"婴儿连体衣"},{"CTA话术（英文）":"This colorway sold out in 48 hours last time. Just restocked — link in bio before it's gone again.","中文翻译":"这个色号上次48小时就卖光了。刚补货——趁还有赶紧点链接","视频阶段":"结尾（促单转化）","行动类型":"稀缺促单","话术逻辑":"真实库存紧张制造紧迫感，“上次卖光”是最强社交证明","配合权益":"产品赠送（买一送一）+ 包邮","配合画面":"展示产品+手指向下指链接","适用品类":"婴儿连体衣, 婴儿外出服"},{"CTA话术（英文）":"One onesie from that 'luxury' brand = $65 and pills after 3 washes. Ours? $35, still perfect after 30.","中文翻译":"那个'奢侈'牌子一件连体衣65刀，洗3次就起球。我们的？35刀，洗30次还完好","视频阶段":"结尾（促单转化）","行动类型":"对比锚定","话术逻辑":"用竞品高价做锚点，突出性价比，“贵一倍但差10倍”","配合权益":"首单折扣码","配合画面":"两个产品价签对比 + 洗涤后对比","适用品类":"有机棉服饰, 婴儿连体衣"},{"CTA话术（英文）":"Every rash on your baby's skin is a reaction to what they're wearing. You can fix that today.","中文翻译":"宝宝皮肤上的每个疹子都是衣服的反应。你今天就能解决这个问题","视频阶段":"结尾（促单转化）","行动类型":"损失厌恶","话术逻辑":"触发妈妈的保护焦虑，'不买=宝宝继续受苦'，保护本能驱动购买","配合权益":"无理由退换","配合画面":"宝宝红疹画面（模糊）→穿上有机棉后安静微笑","适用品类":"有机棉服饰"},{"CTA话术（英文）":"Comment 'SIZE' and I'll DM you our free size guide + a 15% first-order code.","中文翻译":"评论区打'SIZE'，我私信发你免费尺码指南+首单85折码","视频阶段":"结尾（促单转化）","行动类型":"权益利诱","话术逻辑":"尺码指南解决妈妈最大购买障碍+折扣码促转化，双重引流","配合权益":"尺码指南PDF + 折扣码","配合画面":"展示尺码指南封面/手指向评论区","适用品类":"婴儿连体衣, 婴儿外出服"},{"CTA话术（英文）":"12,000 moms switched to us this month. Our newborn set sold out 3 times. Link before it happens again.","中文翻译":"这个月有12000位妈妈选择了我们。新生儿套装卖断货3次。趁有货赶紧点","视频阶段":"结尾（促单转化）","行动类型":"社交证明","话术逻辑":"销量数据+断货历史=从众心理+紧迫感双重促单","配合权益":"包邮","配合画面":"后台订单滚动/仓库打包画面","适用品类":"婴儿连体衣, 有机棉服饰"},{"CTA话术（英文）":"If it doesn't become their softest piece of clothing, full refund within 90 days. Zero risk. Link in bio.","中文翻译":"如果这不是TA最柔软的一件衣服，90天内全额退款。零风险。链接在主页","视频阶段":"结尾（促单转化）","行动类型":"直接指令","话术逻辑":"售后保障消除最后顾虑，'最柔软'=可验证承诺，零风险是最强促单词","配合权益":"90天无理由退款","配合画面":"展示退款政策+宝宝舒适入睡画面","适用品类":"有机棉服饰, 婴儿睡衣"},{"CTA话术（英文）":"Bundle deal: 3-piece set saves you 40%, free shipping, plus a surprise gift in every box.","中文翻译":"套装优惠：3件套琰40%，包邮，每箱还有惊喜礼物","视频阶段":"结尾（促单转化）","行动类型":"权益利诱","话术逻辑":"三重权益叠加：套装折扣+包邮+惊喜赠品，让妈妈觉得'不买亏了'","配合权益":"套装折扣 + 包邮 + 随单赠品","配合画面":"套装全家福展示+拆开惊喜赠品","适用品类":"婴儿连体衣, 婴儿外出服, 婴儿礼盒"}],"count":18},"痛点需求场景库":{"headers":["场景名称","场景分类","用户痛点","情绪关键词","产品切入点","内容角度建议","话术示例（英文）","中文翻译","来源","适用品类","成片记录库"],"records":[{"场景名称":"Daycare早晨赶时间穿搭","场景分类":"🏠 居家日常","用户痛点":"早上赶着送daycare，宝宝不配合穿衣，拉链扣子太多手忙脚乱，15分钟内要搞定一切","情绪关键词":"焦虑, 崩溃","产品切入点":"磁吸扣/大按扣设计，10秒穿好，单手操作无压力","内容角度建议":"拍成'妈妈早晨日常'vlog，用计时器展示穿衣速度，真实感强完播率高","话术示例（英文）":"6:45 AM. Daycare drop-off in 15 minutes. My baby is screaming. These snap buttons saved my morning.","中文翻译":"早上6:45。15分钟后要送daycare。宝宝在尖叫。这些按扣救了我的早晨","来源":"TikTok爆款","适用品类":"婴儿连体衣"},{"场景名称":"宝宝吐奶紧急换装","场景分类":"⚡ 紧急换衣","用户痛点":"出门在外宝宝突然吐奶，衣服全湿，备用衣服要么忘带要么太丑，手忙脚乱","情绪关键词":"慌张, 尴尬","产品切入点":"信封领设计轻松脱下不蹭脸，备用装小巧好带，颜值在线随时能拍照","内容角度建议":"拍'diaper bag必备清单'类型，展示备用衣服的重要性和颜值","话术示例（英文）":"Spit-up disaster 5 minutes before family photos. Always keep a cute backup outfit in the diaper bag.","中文翻译":"拍全家福前5分钟吐奶惨案。永远在妈咪包里放一件好看的备用装","来源":"TikTok评论","适用品类":"婴儿连体衣, 婴儿外出服"},{"场景名称":"公园遛娃被路人夸穿搭","场景分类":"👶 出行遛娃","用户痛点":"想让宝宝出门好看但又怕不舒服，便宜衣服洗两次就变形起球，好看的又不实穿","情绪关键词":"纠结, 期待","产品切入点":"高颜值+舒适面料兼顾，耐洗不变形，出门就是行走的种草机","内容角度建议":"拍'每次去公园都被问链接'的真实场景，路人互动+宝宝穿搭展示","话术示例（英文）":"Every single time we go to the park, someone stops me and asks where I got his outfit.","中文翻译":"每次去公园都有人拦住我问这衣服哪买的","来源":"TikTok爆款","适用品类":"婴儿外出服"},{"场景名称":"带宝宝坐长途飞机","场景分类":"✈️ 旅行出差","用户痛点":"飞机上温差大，宝宝容易出汗或着凉，需要好穿脱的分层穿搭，还要方便换尿布","情绪关键词":"焦虑, 紧张","产品切入点":"分层穿搭系统，好穿脱不吵醒宝宝，双向拉链方便机上换尿布","内容角度建议":"拍'带宝宝飞行穿搭攻略'，展示分层穿法和机上换装过程","话术示例（英文）":"12-hour flight with a 9-month-old. Layering was everything. Easy on, easy off, no meltdowns.","中文翻译":"带9个月宝宝坐12小时飞机。分层穿搭是关键。好穿好脱，零崩溃","来源":"Reddit","适用品类":"婴儿连体衣, 婴儿外出服"},{"场景名称":"换季不知道穿多少","场景分类":"🌡️ 换季过渡","用户痛点":"春秋天早晚温差大，不知道给宝宝穿多少，穿多了怕热出汗穿少了怕着凉感冒","情绪关键词":"纠结, 焦虑","产品切入点":"透气调温面料+分层穿搭方案，一套解决早晚温差问题","内容角度建议":"拍'换季穿搭公式'教程类，给出具体温度对应穿法","话术示例（英文）":"That awkward weather where it's 50°F in the morning and 75°F by noon. This layering hack changed everything.","中文翻译":"那种尴尬天气，早上50华氏度中午75度。这个分层穿搭技巧改变了一切","来源":"妈妈社群","适用品类":"婴儿连体衣, 婴儿外出服"},{"场景名称":"Baby Shower送礼不知道选什么","场景分类":"🎁 送礼场景","用户痛点":"想送实用又有档次的礼物，但不知道对方宝宝尺码和喜好，怕送重复或踩雷","情绪关键词":"纠结, 期待","产品切入点":"精美礼盒套装，适合多尺码，实用+高级感兼顾，拆开就是惊喜","内容角度建议":"拍'baby shower礼物开箱'类，展示收到礼盒时的惊喜反应","话术示例（英文）":"Best baby shower gift I ever received. Not another stuffed animal — actually useful AND beautiful.","中文翻译":"我收到过最好的baby shower礼物。不是又一个毛绒玩具——是真的实用还漂亮","来源":"Amazon Review","适用品类":"婴儿礼盒"},{"场景名称":"宝宝半夜踢被子着凉","场景分类":"💤 睡眠穿搭","用户痛点":"宝宝睡觉踢被子，半夜要起来盖好几次，担心着凉感冒，妈妈也睡不好","情绪关键词":"焦虑, 疲惫","产品切入点":"睡袋设计，不用盖被子，整晚保暖不踢开，妈妈终于能睡整觉","内容角度建议":"拍'宝宝睡眠前后对比'类型，展示用睡袋前后妈妈和宝宝的睡眠质量变化","话术示例（英文）":"My baby kicks off every blanket. This sleep sack? She's warm ALL night. I finally sleep through.","中文翻译":"我宝宝把每条被子都踢开。这个睡袋？她整晚都暖和。我终于能睡整觉了","来源":"TikTok爆款","适用品类":"婴儿睡衣"},{"场景名称":"宝宝学爬学走磨膝盖","场景分类":"🏃 运动发育","用户痛点":"宝宝学爬阶段膝盖磨红了，普通裤子太薄没有保护，又不能因此不让爬","情绪关键词":"焦虑, 心疼","产品切入点":"加厚护膝设计的爬行裤，保护膝盖不磨红，同时不影响活动自由","内容角度建议":"拍宝宝爬行前后膝盖对比，普通裤vs加厚护膝裤的差异","话术示例（英文）":"My crawler's knees were RED every single day. These reinforced leggings? Game changer.","中文翻译":"我家小爬虫的膝盖每天都是红的。这条加厚护膝裤？改变了一切","来源":"Amazon Review","适用品类":"婴儿连体衣"},{"场景名称":"宝宝周岁生日Party穿搭","场景分类":"📸 仪式感时刻","用户痛点":"想让宝宝生日穿得特别但不想买只穿一次的衣服，要好看又日常能穿","情绪关键词":"期待, 纠结","产品切入点":"精致设计感适合特别场合，但不浮夸，日常也能穿，性价比高","内容角度建议":"拍'周岁生日穿搭'类型，展示生日当天+后续日常穿的双重场景","话术示例（英文）":"Her first birthday outfit. Everyone asked if it was custom. Nope — and she still wears it to brunch.","中文翻译":"她的周岁生日装。每个人都问是不是定制的。不是——而且她现在还穿着去吃brunch","来源":"TikTok爆款","适用品类":"婴儿外出服"},{"场景名称":"冬天外出宝宝裹成球","场景分类":"🌡️ 换季过渡","用户痛点":"冬天给宝宝穿太多像粽子，行动不便还容易过热出汗，但穿少了又怕冻着","情绪关键词":"焦虑, 纠结","产品切入点":"轻薄保暖连体衣，一件顶三层，不臃肿不束缚，宝宝活动自如","内容角度建议":"拍'别再给宝宝穿5层了'类型，展示一件就能解决的保暖方案","话术示例（英文）":"Stop putting 5 layers on your baby. This one piece keeps her warm at 20°F without the bulk.","中文翻译":"别再给宝宝穿5层了。这一件在零下6度也能保暖，不臃肿","来源":"TikTok爆款","适用品类":"婴儿连体衣, 婴儿外出服","成片记录库":"2026/03/15"},{"场景名称":"尿布漏了衣服全湿","场景分类":"⚡ 紧急换衣","用户痛点":"尿布侧漏，里面衣服全湿透，在外面很狼狈，还要给宝宝从头套湿衣服","情绪关键词":"崩溃, 无奈","产品切入点":"信封领设计不用从头套，湿衣服从肩部往下脱，不弄脏宝宝脸","内容角度建议":"拍'尿布blowout救急指南'，展示信封领如何优雅应对灾难现场","话术示例（英文）":"Diaper blowout at Target. Full outfit change in the car. Thank god for envelope necklines.","中文翻译":"在Target尿布爆了。在车里换了整套衣服。感谢信封领设计","来源":"Reddit","适用品类":"婴儿连体衣"},{"场景名称":"圣诞/节日家庭合照","场景分类":"📸 仪式感时刻","用户痛点":"节日全家福想要matching outfit，但婴儿版的很难找到质量好的，便宜的拍出来很廉价","情绪关键词":"期待, 纠结","产品切入点":"节日专属系列，面料柔软质感好，拍照上镜效果佳，不是一次性垃圾","内容角度建议":"拍'全家节日matching outfit'类型，展示全家福拍摄过程+成片效果","话术示例（英文）":"Christmas card photo — everyone matching. And yes, the baby's outfit is the softest one.","中文翻译":"圣诞卡拍照——全家统一。而且没错，宝宝的那件是最柔软的","来源":"TikTok爆款","适用品类":"婴儿外出服, 婴儿配饰"},{"场景名称":"新生儿出院穿什么","场景分类":"🎁 送礼场景","用户痛点":"宝宝出院的第一套衣服要特别，但新生儿皮肤太嫩怕刺激，又要好看又要安全","情绪关键词":"期待, 谨慎","产品切入点":"GOTS有机棉认证，pH平衡，无荧光剂，新生儿第一套衣服的最佳选择","内容角度建议":"拍'going home outfit'开箱，展示妈妈为宝宝第一套衣服的用心选择","话术示例（英文）":"The 'going home' outfit. Had to be soft, had to be special. This organic cotton set was perfect.","中文翻译":"出院服。必须柔软，必须特别。这套有机棉刚刚好","来源":"妈妈社群","适用品类":"婴儿礼盒, 有机棉服饰"},{"场景名称":"敏感肌宝宝穿什么都起疹子","场景分类":"🏠 居家日常","用户痛点":"宝宝皮肤敏感/湿疹，很多衣服穿了起红疹，不敢随便买，退货率极高","情绪关键词":"焦虑, 心疼","产品切入点":"有机棉+无化学添加，通过皮肤测试，湿疹宝宝专用，零刺激零过敏","内容角度建议":"拍'湿疹宝宝妈妈的购物踩坑史'，展示试过的牛衣服和终于找到的解决方案","话术示例（英文）":"My baby has eczema. We've returned SO many clothes. These? Zero rash. Finally.","中文翻译":"我宝宝有湿疹。我们退了超多衣服。这些？零过敏。终于","来源":"Amazon Review","适用品类":"有机棉服饰, 婴儿连体衣"},{"场景名称":"Daycare要求标名字的衣服","场景分类":"🏠 居家日常","用户痛点":"Daycare要写名字，好衣服舍不得写，便宜的又不想让宝宝穿，很矛盾","情绪关键词":"纠结, 无奈","产品切入点":"内置姓名标签设计，不用在衣服上写字，既实用又保护衣服","内容角度建议":"拍'daycare妈妈都懂的纠结'类型，展示内置标签的贴心设计","话术示例（英文）":"Daycare needs labeled clothes. I'm not writing on $40 onesies. These have built-in name tags.","中文翻译":"Daycare要求标名字。我40刀的连体衣上写字？我才不。这些有内置姓名标签","来源":"妈妈社群","适用品类":"婴儿连体衣"}],"count":15},"爆款评论库":{"headers":["评论原文（英文）","中文翻译","可转化为","情绪标签","来源视频链接","适用品类","采集日期"],"records":[{"评论原文（英文）":"obsessed with this onesie 😭 the snap buttons actually LINE UP and the fabric is SO soft my baby won't take it off","中文翻译":"这件连体衣我太爱了😭按扣真的对得上，面料超软宝宝都不愿意脱","可转化为":"UGC素材, 中间卖点","情绪标签":"惊喜, 满足","适用品类":"婴儿连体衣, 有机棉服饰"},{"评论原文（英文）":"bought this for my friend's baby shower and she literally cried. it's THAT beautiful","中文翻译":"买来送朋友的baby shower，她直接哭了。真的太美了","可转化为":"促单话术, UGC素材","情绪标签":"惊喜, 感恩","适用品类":"婴儿礼盒"},{"评论原文（英文）":"my son has eczema and this is the ONLY brand that doesn't make him break out. ordering every size up","中文翻译":"我儿子有湿疹，这是唯一不会让他起疹的牌子。每个尺码都要囤","可转化为":"痛点文案, 钩子话术","情绪标签":"感恩, 共鸣","适用品类":"有机棉服饰, 婴儿连体衣"},{"评论原文（英文）":"why is baby fashion better than adult fashion rn 😂 my 6 month old is out-dressing me","中文翻译":"为什么现在宝宝的衣服比大人的还好看😂 我6个月的娃穿得比我时髦","可转化为":"钩子话术, UGC素材","情绪标签":"惊喜, 满足","适用品类":"婴儿外出服"},{"评论原文（英文）":"3 washes in and it still looks brand new. every other brand pills after one wash","中文翻译":"洗了3次还跟新的一样。其他牌子洗一次就起球","可转化为":"中间卖点, 促单话术","情绪标签":"惊喜, 满足","适用品类":"有机棉服饰, 婴儿连体衣"},{"评论原文（英文）":"the going home outfit I WISH I had for my first baby 🥹 just ordered for baby #2","中文翻译":"这就是我第一胎时想要的出院服🥹 已经给二胎订好了","可转化为":"需求场景, 促单话术","情绪标签":"后悔, 感恩","适用品类":"婴儿礼盒, 有机棉服饰"},{"评论原文（英文）":"sleep sack convert here 🙋‍♀️ my baby went from waking up 4x a night to sleeping straight through","中文翻译":"睡袋教信徒来报到🙋‍♀️ 我宝宝从一晚醒4次变成一觉到天亮","可转化为":"钩子话术, 痛点文案","情绪标签":"惊喜, 感恩","适用品类":"婴儿睡衣"},{"评论原文（英文）":"I showed this to my husband and he said 'order it in every color' 😂 that NEVER happens","中文翻译":"给老公看了一下他说'每个颜色都来一件'😂 这从来没发生过","可转化为":"UGC素材, 促单话术","情绪标签":"惊喜, 满足","适用品类":"婴儿外出服, 婴儿连体衣"},{"评论原文（英文）":"as a NICU nurse I'm SO picky about what touches newborn skin. this passed my test ✅","中文翻译":"作为NICU护士我对接触新生儿皮肤的东西超挑剔。这个通过了我的测试✅","可转化为":"开头台词, 中间卖点","情绪标签":"满足, 认同","适用品类":"有机棉服饰, 婴儿连体衣"},{"评论原文（英文）":"the matching sibling set 🥺 my toddler keeps pointing at the baby saying 'same same!'","中文翻译":"兄弟姐妹配套款🥺 我家大宝一直指着小宝说'一样一样！'","可转化为":"UGC素材, 需求场景","情绪标签":"惊喜, 满足","适用品类":"婴儿外出服, 婴儿配饰"},{"评论原文（英文）":"Finally a onesie my husband can figure out at 3am without waking me up 😂","中文翻译":"终于有一件连体衣让我老公凌晨3点不用叫醒我就能搞定了","可转化为":"钩子话术, 痛点文案","情绪标签":"搞笑","适用品类":"婴儿连体衣"},{"评论原文（英文）":"I was skeptical about paying $35 for a onesie but after 6 months of daily wear it still looks brand new 🙌","中文翻译":"花$35买一件连体衣我本来很犹豫，但穿了6个月看起来还跟新的一样","可转化为":"中间卖点, 促单话术","情绪标签":"惊喜","适用品类":"有机棉服饰, 婴儿连体衣"},{"评论原文（英文）":"My baby literally smiles when I put this on her. She KNOWS it's the soft one 🥺","中文翻译":"我宝宝穿这件的时候真的会笑，她知道这是柔软的那件","可转化为":"钩子话术, 中间卖点","情绪标签":"感恩","适用品类":"有机棉服饰, 婴儿睡衣"},{"评论原文（英文）":"Bought this as a baby shower gift and the mom CRIED when she opened it 😭💛","中文翻译":"买来当baby shower礼物，准妈妈打开的时候感动哭了","可转化为":"钩子话术, 需求场景","情绪标签":"感恩","适用品类":"婴儿礼盒"},{"评论原文（英文）":"Can we talk about how this survived spaghetti night, blueberry explosion AND a park mud bath? 😅","中文翻译":"这件衣服经历了意大利面夜、蓝莓爆炸和公园泥浴之后居然还能洗干净","可转化为":"中间卖点, UGC素材","情绪标签":"搞笑, 惊喜","适用品类":"婴儿连体衣, 婴儿外出服"},{"评论原文（英文）":"My baby has eczema and this is the ONLY brand that doesn't irritate her skin ❤️","中文翻译":"我宝宝有湿疑，这是唯一一个不会刺激她皮肤的品牌","可转化为":"痛点文案, 促单话术","情绪标签":"感恩","适用品类":"有机棉服饰, 婴儿睡衣"},{"评论原文（英文）":"I literally bought 10 of these in every size. I'm DONE shopping for onesies 🙏","中文翻译":"我直接每个尺码买了10件，连体衣我不用再逋了","可转化为":"钩子话术, 促单话术","情绪标签":"认同","适用品类":"婴儿连体衣"},{"评论原文（英文）":"The way my MIL said 'oh this is actually really nice quality' — that's the review that matters 😂","中文翻译":"我婆婆说“哎这质量真的挺好的”——这才是最重要的评价","可转化为":"钩子话术, UGC素材","情绪标签":"搞笑, 认同","适用品类":"婴儿连体衣, 婴儿外出服"},{"评论原文（英文）":"THIS is why I don't buy baby clothes from Shein anymore. Look at the difference after one wash 🙄","中文翻译":"这就是我不再从Shein买婴儿服的原因。看看洗一次之后的差别","可转化为":"钩子话术, 痛点文案","情绪标签":"认同, 感恩","适用品类":"有机棉服饰, 婴儿连体衣"},{"评论原文（英文）":"I got so many compliments at the park today. Three moms asked me where I got it 😍","中文翻译":"今天在公园被狂夾，3个妈妈问我在哪儿买的","可转化为":"钩子话术, UGC素材","情绪标签":"惊喜","适用品类":"婴儿外出服, 婴儿配饰"},{"评论原文（英文）":"Whoever invented double-zip onesies deserves a Nobel Peace Prize 🏆","中文翻译":"发明双向拉链连体衣的人应该获得诺贝尔和平奖","可转化为":"钩子话术","情绪标签":"搞笑, 认同","适用品类":"婴儿连体衣"},{"评论原文（英文）":"My preemie was swimming in everything else but this brand actually fits newborns properly 🙏","中文翻译":"我家早产宝宝穿别的都超大，只有这个牌子的新生儿码是真的合身","可转化为":"痛点文案, 需求场景","情绪标签":"感恩","适用品类":"婴儿连体衣"},{"评论原文（英文）":"Okay but why does my 6-month-old look like she's ready for fashion week in this outfit 😭✨","中文翻译":"我家6个月的宝宝穿上这套衣服看起来像要去走时装周了","可转化为":"钩子话术, UGC素材","情绪标签":"惊喜, 搞笑","适用品类":"婴儿外出服, 婴儿配饰"},{"评论原文（英文）":"I checked the tag — GOTS certified, no formaldehyde, no AZO dyes. THIS is what I want for my baby ✅","中文翻译":"我看了标签——GOTS认证，无甲醛，无偶氮染料。这才是我想给宝宝的","可转化为":"中间卖点, 促单话术","情绪标签":"认同","适用品类":"有机棉服饰"},{"评论原文（英文）":"The embroidery with my baby's name made me ugly cry. Best $3 add-on ever 😭💕","中文翻译":"看到绣上宝宝名字的时候我哭了。最值的$3加购","可转化为":"钩子话术, 促单话术","情绪标签":"感恩, 惊喜","适用品类":"婴儿礼盒, 婴儿连体衣"},{"评论原文（英文）":"Expectation vs reality: I dressed my baby cute for photos and 5 mins later... 😂💩","中文翻译":"理想vs现实：精心打扮好拍照，5分钟后...","可转化为":"钩子话术, UGC素材","情绪标签":"搞笑, 共鸣","适用品类":"婴儿外出服, 婴儿连体衣"},{"评论原文（英文）":"Second baby and I already know — skip the cute outfits, invest in GOOD basics. This brand gets it 👏","中文翻译":"二胎妈妈的经验：别买花哨的，投资好的基础款。这个牌子懂","可转化为":"中间卖点, 痛点文案","情绪标签":"认同","适用品类":"婴儿连体衣, 有机棉服饰"},{"评论原文（英文）":"I sent this to 3 pregnant friends. You're welcome 😘","中文翻译":"我已经把这个发给3个怀孕的朋友了，不用谢","可转化为":"促单话术, UGC素材","情绪标签":"认同, 惊喜","适用品类":"婴儿连体衣, 婴儿礼盒"},{"评论原文（英文）":"Daycare keeps asking what brand his clothes are because they're the easiest to change 😂","中文翻译":"幼儿园老师一直问我宝宝衣服是什么牌子，因为换起来最方便","可转化为":"钩子话术, 需求场景","情绪标签":"搞笑, 认同","适用品类":"婴儿连体衣"},{"评论原文（英文）":"Passed this onesie down to baby #2 and it STILL looks perfect. That's $35 well spent over 2 kids 💰","中文翻译":"这件连体衣传给老二了，看起来还是完美的。$35两个孩子穿超值","可转化为":"中间卖点, 促单话术","情绪标签":"惊喜, 认同","适用品类":"婴儿连体衣, 有机棉服饰"}],"count":30},"卖点画面库":{"headers":["拍摄说明","画面类型","作用","配合视频阶段","适用品类","参考视频链接","参考截图","成片记录库"],"records":[{"拍摄说明":"微距镜头拍面料纹理，手指轻轻捏起有机棉面料展示柔软度和厚度。慢动作拍面料回弹，光线打出质感。配合婴儿小手触摸面料的画面","画面类型":"面料特写","作用":"建立品质感和高级感。中高端婴儿服饰的核心卖点就是面料，必须让妈妈“看得到”品质，而不是只听你说","配合视频阶段":"中间","适用品类":"有机棉服饰, 婴儿连体衣, 婴儿睡衣","成片记录库":"2026/03/15"},{"拍摄说明":"真实拍摄给宝宝穿衣服的全过程——展示按扣设计如何快速穿脱，拉链护片如何保护下巴，信封领如何轻松套头。用计时器展示'10秒穿好'","画面类型":"穿脱演示","作用":"解决妈妈最大的实用痛点——穿脱方便。一个流畅的穿衣过程比任何文案都有说服力，特别是对每天早上赶时间的妈妈","配合视频阶段":"中间","适用品类":"婴儿连体衣, 婴儿外出服","成片记录库":"2026/03/14"},{"拍摄说明":"抓拍宝宝穿上衣服后的自然表情——舒服地笑、安静入睡、开心地爬。不能摆拍，必须真实自然。慢动作捕捉宝宝笑容和小动作","画面类型":"宝宝自然反应","作用":"情绪感染力极强。妈妈看到别人家宝宝穿着舒服开心，会本能地想给自家宝宝也买。真实感>一切","配合视频阶段":"通用","适用品类":"婴儿连体衣, 婴儿睡衣, 婴儿外出服"},{"拍摄说明":"两件衣服并排——一件竞品一件自家，同时放进洗衣机。洗完后对比：起球程度、缩水程度、颜色保持度。用尺子量缩水，用手摸起球","画面类型":"洗涤对比测试","作用":"中高端最需要证明'贵得值'。洗涤测试是最直观的品质证明，妈妈最怕的就是洗两次就废","配合视频阶段":"中间","适用品类":"有机棉服饰, 婴儿连体衣"},{"拍摄说明":"展示GOTS有机认证标签、OEKO-TEX检测报告、面料成分标签特写。配合无荧光剂测试（紫光灯照射对比）、pH试纸测试等可视化检测","画面类型":"认证/成分展示","作用":"建立信任，特别是敏感肌宝宝的妈妈。认证是'不用自己说好，第三方替你说'的最强背书","配合视频阶段":"中间","适用品类":"有机棉服饰, 婴儿连体衣, 婴儿睡衣"},{"拍摄说明":"从快递拆开到打开礼盒的全过程——展示包装设计、丝带、薄纸、吊牌细节。重点拍'拆礼物'的仪式感，手触摸面料的第一反应","画面类型":"开箱/礼盒展示","作用":"Baby shower送礼场景的核心画面。精美包装=送得出手。开箱仪式感能激发'我也想收到'的冲动","配合视频阶段":"开头","适用品类":"婴儿外出服, 婴儿礼盒"},{"拍摄说明":"在真实场景中拍宝宝穿搭——公园草地上爬、daycare门口挥手、客厅地毯上玩玩具、超市购物车里坐着。环境必须真实有生活感，不要纯白背景棚拍","画面类型":"日常场景穿搭","作用":"让妈妈看到'这件衣服在我的生活里是什么样的'，降低想象门槛。生活感的内容在TikTok完播率最高","配合视频阶段":"通用","适用品类":"婴儿外出服, 婴儿连体衣, 婴儿配饰","成片记录库":"2026/03/14"}],"count":7},"社会证明库":{"headers":["素材名称","证明类型","素材来源","使用场景说明","信任强度","备注","附件","成片记录库"],"records":[{"素材名称":"好评截图","证明类型":"用户好评","素材来源":"评论素材库","使用场景说明":"TikTok Shop带星级+文字评价的截图，直接贴在视频里或录屏滑动评论区。优先选有图有文字的评价，纯星级感染力弱。","信任强度":"⭐⭐ 中等信任","成片记录库":"2026/03/14"},{"素材名称":"UGC视频","证明类型":"用户好评","素材来源":"评论素材库","使用场景说明":"买家自发的使用视频，真实感最强。可以截取片段放在视频“信”步骤，配文字“看看买家怎么说”。比品牌自己拍的更有说服力。","信任强度":"⭐⭐⭐ 强信任"},{"素材名称":"前后对比图","证明类型":"用户好评","素材来源":"评论素材库","使用场景说明":"使用前 vs 使用后的对比图，视觉冲击力强。特别适合护肤、清洁、美容仪器类产品，一张图就能说明一切。","信任强度":"⭐⭐⭐ 强信任"},{"素材名称":"复购率数据","证明类型":"用户好评","素材来源":"评论素材库","使用场景说明":"“80%用户复购”“平均每人买了×次”，说明用户用完还会再买。比单次购买数据更有说服力，因为“愿意再买”=真的好用。","信任强度":"⭐⭐ 中等信任"},{"素材名称":"评论区精选截图","证明类型":"用户好评","素材来源":"评论素材库","使用场景说明":"精选有感染力的真实评论，比如“OMG this changed my life”。录屏滑动评论区的方式比截图更真实、更有代入感。","信任强度":"⭐⭐ 中等信任"},{"素材名称":"网红实测视频","证明类型":"网红背书","素材来源":"达人素材库","使用场景说明":"达人亲自使用+推荐的视频片段，截取最精华的推荐部分放在视频里。用目标市场本土达人，美区用美国达人。","信任强度":"⭐⭐⭐ 强信任","成片记录库":"2026/03/14"},{"素材名称":"网红同款标签","证明类型":"网红背书","素材来源":"达人素材库","使用场景说明":"“XX网红同款”“TikTok爆款”“As seen on TikTok”等标签，以文字或贴纸形式出现在视频中，增强信任背书。","信任强度":"⭐⭐ 中等信任","成片记录库":"2026/03/15"},{"素材名称":"网红开箱合集","证明类型":"网红背书","素材来源":"达人素材库","使用场景说明":"多个达人都在开箱/使用的合集片段，“这么多网红都在用”的从众效应。适合放在视频中段堆叠信任感。","信任强度":"⭐⭐⭐ 强信任"},{"素材名称":"达人直播片段","证明类型":"网红背书","素材来源":"达人素材库","使用场景说明":"截取达人带货直播中推荐你产品的片段，直播场景有天然的真实感和紧迫感，“连直播间都在卖”。","信任强度":"⭐⭐⭐ 强信任"},{"素材名称":"KOL日常使用截图","证明类型":"网红背书","素材来源":"达人素材库","使用场景说明":"明星/KOL在日常视频中自然使用产品的截图，不是广告而是“日常在用”，信任感比硬广更强。","信任强度":"⭐⭐ 中等信任"},{"素材名称":"FDA批准/注册证书","证明类型":"权威认证","素材来源":"产品资料库","使用场景说明":"FDA批准/注册证书截图，在视频里快速闪过。美区消费者对FDA标志极度敏感，特别适合护肤、保健品、母婴品类。","信任强度":"⭐⭐⭐ 强信任"},{"素材名称":"UL/CE/FCC国际认证","证明类型":"权威认证","素材来源":"产品资料库","使用场景说明":"国际安全认证标志，特别适合电子产品、家用电器、儿童用品。在视频中贴上认证logo或快速展示证书，让用户感受到“正规、安全”。","信任强度":"⭐⭐⭐ 强信任"},{"素材名称":"第三方检测报告","证明类型":"权威认证","素材来源":"产品资料库","使用场景说明":"SGS、Intertek等第三方检测报告，配合“经国际权威机构检测”文字。适合科普权威型框架，在讲完成分后紧跟检测报告截图。","信任强度":"⭐⭐⭐ 强信任","成片记录库":"2026/03/14,2026/03/15"},{"素材名称":"成分表/成分检测","证明类型":"权威认证","素材来源":"产品资料库","使用场景说明":"产品成分表或成分检测报告截图，配合“看成分表就知道”文字。特别适合护肤、保健品、食品类，让用户感受到透明和专业。","信任强度":"⭐⭐ 中等信任"},{"素材名称":"医生/专家推荐","证明类型":"权威认证","素材来源":"产品资料库","使用场景说明":"皮肤科医生、营养师、工程师等专业人士的推荐背书。“Dermatologist recommended”在美区是极强的信任信号。适合护肤、健康、母婴品类。","信任强度":"⭐⭐⭐ 强信任","成片记录库":"2026/03/14"},{"素材名称":"专利证书/获奖记录","证明类型":"权威认证","素材来源":"产品资料库","使用场景说明":"产品专利证书、红点奖、iF设计奖等获奖记录。“获得××大奖”让产品显得不一样，适合创新型/设计感强的产品。","信任强度":"⭐⭐ 中等信任"},{"素材名称":"累计销量数字","证明类型":"销量数据","素材来源":"数据素材库","使用场景说明":"“已售出50万件”文字+数字滚动动画，放在视频尾段促单前。“这么多人买了，不会差”是最原始但最有效的从众信号。注意数据必须真实。","信任强度":"⭐ 基础信任"},{"素材名称":"榜单截图","证明类型":"销量数据","素材来源":"数据素材库","使用场景说明":"“美区销量第一”“TikTok Shop品类榜第一”等榜单截图，直接截取平台排行榜画面。“第一名”比具体数字更有冲击力。","信任强度":"⭐⭐ 中等信任"},{"素材名称":"上架速度数据","证明类型":"销量数据","素材来源":"数据素材库","使用场景说明":"“上架3天卖出1万件”“首发当天售罄”，强调销售速度而不是总量。给用户“再不买就来不及了”的紧迫感。","信任强度":"⭐ 基础信任"},{"素材名称":"补货次数/库存紧张","证明类型":"销量数据","素材来源":"数据素材库","使用场景说明":"“这个月已经补货3次”“库存只剩最后200件”，制造稀缺感。补货=卖得快，库存紧张=再不买就没了。双重促单信号。","信任强度":"⭐ 基础信任"},{"素材名称":"实时订单滚动","证明类型":"销量数据","素材来源":"数据素材库","使用场景说明":"“XX刚刚下单了”“YY也买了”实时订单滚动展示，制造“大家都在抢”的氛围。适合放在视频最后几秒促单时使用。","信任强度":"⭐ 基础信任"},{"素材名称":"购买链接点击量","证明类型":"销量数据","素材来源":"数据素材库","使用场景说明":"TikTok Shop购买链接的点击量截图，“XX万人点击了购买链接”。不一定是购买量，但点击量本身就说明“很多人感兴趣”。","信任强度":"⭐ 基础信任"},{"证明类型":"用户好评"}],"count":23},"权益库":{"headers":["权益名称","权益类型","权益描述","适用场景","成本等级","组合建议","话术示例","适用品类","成片记录库"],"records":[{"权益名称":"宝宝穿搭尺码指南PDF","权益类型":"电子书/指南","权益描述":"0-3岁宝宝按月龄的尺码对照表+不同季节穿搭建议+面料选购指南。解决妈妈最大购买障碍'不知道选什么码'","适用场景":"新客引流, 评论区互动","成本等级":"零成本","组合建议":"搭配折扣码一起发，'指南+优惠'双重引流","话术示例":"Comment 'SIZE' and I'll DM you our free size guide for 0-3 years","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰"},{"权益名称":"买二送一（同系列）","权益类型":"产品赠送","权益描述":"买两件同系列送第三件。宝宝换衣频率高，妈妈本来就要囤货，'第三件免费'极具吸引力","适用场景":"短视频挂车, 新品首发","成本等级":"中成本","组合建议":"搭配包邮，降低决策门槛","话术示例":"Buy 2, get 1 FREE — because babies go through 3 outfits a day anyway","适用品类":"婴儿连体衣, 有机棉服饰","成片记录库":"2026/03/14"},{"权益名称":"妈妈专属折扣码","权益类型":"折扣券","权益描述":"TikTok专属15% off折扣码，让妈妈感觉是'粉丝特权'而非大众优惠。可追踪渠道转化","适用场景":"短视频挂车, 私域转化","成本等级":"低成本","组合建议":"搭配包邮形成双重优惠","话术示例":"Use code BABYLOVE15 for 15% off — only for my followers","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰, 婴儿礼盒"},{"权益名称":"免费面料样品卡","权益类型":"免费试用","权益描述":"寄送面料色卡样品（5种面料触感对比），让妈妈亲手摸到有机棉品质。低成本但转化率极高","适用场景":"新客引流, 评论区互动","成本等级":"低成本","组合建议":"搭配'摸过再下单'话术+首单折扣码","话术示例":"Free fabric swatch — feel the difference before you buy","适用品类":"有机棉服饰"},{"权益名称":"随单惊喜小礼物","权益类型":"专属赠品","权益描述":"每单随机附赠婴儿小袜子/口水巾/小帽子。制造开箱惊喜，激发妈妈自发晒单和UGC内容","适用场景":"老客回购, 新品首发","成本等级":"低成本","组合建议":"搭配感谢卡引导晒单，形成UGC循环","话术示例":"Every order comes with a little surprise inside for your baby 🎁","适用品类":"婴儿连体衣, 婴儿外出服, 婴儿配饰"},{"权益名称":"全场包邮","权益类型":"包邮/免运","权益描述":"无门槛免运费。运费是妈妈放弃购物车的头号原因，尤其是单件购买时","适用场景":"短视频挂车, 节日促销","成本等级":"低成本","组合建议":"搭配折扣码，'打折+包邮'最经典促单组合","话术示例":"Free shipping on everything — no minimum. Today only.","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰, 婴儿礼盒"},{"权益名称":"90天无理由退换","权益类型":"延保/售后","权益描述":"90天内不满意全额退款，包含尺码不合换码。消除'线上买衣服怕尺码不对'的最大焦虑","适用场景":"短视频挂车, 直播间促单","成本等级":"零成本","组合建议":"搭配'对比锚定'促单，'别人不给退我们90天无忧'","话术示例":"90-day return. Wrong size? We'll exchange it free. No questions asked.","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰, 婴儿睡衣"},{"权益名称":"成长换购计划","权益类型":"会员权益","权益描述":"宝宝长大了穿不下？寄回旧衣即可享受下一尺码7折换购。中高端婴儿服饰的成长换购服务，降低妈妈复购决策门槛，提升客户终身价值","适用场景":"老客回购, 高客单价产品","成本等级":"中成本","组合建议":"搭配「妈妈VIP社群」权益，社群内优先通知换购活动；搭配「新生儿礼盒套装」做首次购买+后续换购的组合链路","话术示例":"Baby outgrew it? Don't toss it — send it back and get 30% off the next size up 👶📦 Our Growth Exchange Program means you never waste a single outfit","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰, 婴儿睡衣"},{"权益名称":"妈妈VIP社群","权益类型":"独家内容/教程","权益描述":"下单即可加入妈妈VIP专属社群，获取新品优先购买权、独家穿搭灵感、育儿好物分享。打造品牌私域流量池，提升复购率和口碑传播","适用场景":"私域转化, 老客回购, 新品首发","成本等级":"零成本","组合建议":"搭配「成长换购计划」在社群内推送换购通知；搭配「宝宝穿搭视频教程」作为社群独家内容福利","话术示例":"Join our Mom's VIP group 💝 Get early access to new drops, exclusive styling tips, and connect with 10K+ moms who love dressing their babies in style","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰, 婴儿礼盒, 婴儿配饰, 婴儿睡衣","成片记录库":"2026/03/15"},{"权益名称":"宝宝穿搭视频教程","权益类型":"独家内容/教程","权益描述":"下单解锁「BabyTok穿搭系列」视频教程，教妈妈如何搭配不同场景的宝宝outfit。用内容赋能产品，提升品牌专业度和客户粘性","适用场景":"新客引流, 评论区互动, 短视频挂车","成本等级":"低成本","组合建议":"搭配「妈妈VIP社群」作为入群独家福利；搭配「晒娃抽免单」鼓励妈妈学完教程后拍照分享","话术示例":"Order today and unlock our exclusive Baby Styling Video Series 🎬👶 Learn 15 outfit combos for every occasion — from playdates to family photos","适用品类":"婴儿连体衣, 婴儿外出服, 婴儿配饰"},{"权益名称":"晒娃抽免单","权益类型":"抽奖/福利","权益描述":"买家晒出宝宝穿搭照并@品牌账号，每周抽取1位幸运妈妈免单。利用UGC内容裂变，低成本获取真实买家秀，同时激活社交传播","适用场景":"评论区互动, 新客引流, 私域转化","成本等级":"低成本","组合建议":"搭配「宝宝穿搭视频教程」引导妈妈拍出更好看的买家秀；搭配「妈妈VIP社群」在群内同步中奖信息制造FOMO","话术示例":"Post your baby wearing our outfit, tag @us, and you could win a FREE order every week! 📸✨ Already 500+ adorable babies in our gallery — yours could be next!","适用品类":"婴儿连体衣, 婴儿外出服, 有机棉服饰, 婴儿配饰"},{"权益名称":"新生儿礼盒套装","权益类型":"捆绑套装","权益描述":"连体衣+帽子+袜子+口水巾精美礼盒装，比单买省35%。送礼自用两相宜，高颜值礼盒包装自带社交传播属性，适合baby shower和满月礼","适用场景":"节日促销, 新客引流, 高客单价产品, 新品首发","成本等级":"中成本","组合建议":"搭配「免费刺绣定制」为礼盒增加个性化价值；搭配「成长换购计划」让送礼对象成为长期客户","话术示例":"The Ultimate Newborn Gift Set 🎁 Onesie + hat + socks + bib in a gorgeous gift box — save 35% vs buying separately. Perfect for baby showers!","适用品类":"婴儿连体衣, 婴儿礼盒, 婴儿配饰"}],"count":12},"BGM情绪库":{"headers":["BGM名称","情绪类型","适用内容","特征","存入剪映空间/公司nas","成片记录库"],"records":[{"BGM名称":"Oh No - Kreepa","情绪类型":"紧张推进型","适用内容":"婴儿服饰安全隐患揭露类：如「你买的童装可能含有这些有害物质」「90%的妈妈不知道的婴儿服标签陷阱」；快节奏产品对比类：便宜童装 vs 有机棉童装的真实差距；紧迫感促销类：限量款即将售罄倒计时","特征":"节奏紧凑、悬疑感强，适合制造紧张氛围和好奇心驱动的开头。BabyTok上常用于揭露类和对比类内容，3秒内抓住妈妈注意力","存入剪映空间/公司nas":"已存入"},{"BGM名称":"Glow Up - Stickle","情绪类型":"爽感共鸣型","适用内容":"宝宝穿搭变装类：pajama到出门outfit的一键换装；开箱惊喜类：拆开礼盒的满足感展示；before/after对比类：普通穿搭→精心搭配的视觉冲击；妈妈给宝宝打扮的成就感时刻","特征":"节奏感强、正向情绪爆发，适合展示「变身时刻」和视觉冲击力强的内容。BabyTok上用于穿搭变装和开箱视频，配合卡点转场效果极佳","存入剪映空间/公司nas":"已存入"},{"BGM名称":"Aesthetic - Tollan Kim","情绪类型":"轻松治愈型","适用内容":"宝宝日常穿搭vlog类：记录宝宝一天的outfit变化；有机棉材质展示类：慢镜头展示面料柔软质感；亲子时光类：妈妈和宝宝的温馨互动穿搭；品牌故事类：展示品牌理念和制作工艺","特征":"旋律舒缓、氛围感强，适合营造温馨治愈的观感。BabyTok上用于日常记录和品牌调性展示，配合暖色调滤镜效果最佳，适合中高端婴儿服饰的品牌调性","存入剪映空间/公司nas":"已存入","成片记录库":"2026/03/14"},{"BGM名称":"流行趋势音（随TikTok热门更新）","情绪类型":"流行趋势音","适用内容":"跟随TikTok当周热门音频制作婴儿服饰内容：如用热门meme音频配宝宝表情包、用trending sound做宝宝穿搭挑战、蹭热门BGM做产品植入。需每周更新，保持内容新鲜度和算法推荐权重","特征":"随平台热度变化，需持续追踪TikTok Trending Sound榜单。BabyTok赛道的特点是热门音频+可爱宝宝=高概率爆款，建议每周一团队会同步本周可用trending sound","存入剪映空间/公司nas":"未存","成片记录库":"2026/03/14"},{"BGM名称":"Love Grows - Edison Lighthouse","情绪类型":"轻松治愈型","适用内容":"亲子同款穿搭展示、妈妈和宝宝日常互动、温馨家庭时刻vlog、父母给宝宝换装的温情画面","特征":"复古欢快风，节奏轻快但不急躁，自带怀旧温暖感。适合亲子互动类内容，配合暖色调滤镜效果最佳"},{"BGM名称":"Monkeys Spinning Monkeys - Kevin MacLeod","情绪类型":"轻松治愈型","适用内容":"宝宝穿搭翻车现场（精心打扮→5分钟后的样子）、趋味日常、妈妈自嘲式内容、宝宝搞笑日常记录","特征":"欢快谐谑风，节奏轻快幽默，适合所有搞笑/翻车类内容。BabyTok上用于“理想vs现实”类视频效果极佳"},{"BGM名称":"Pieces (Solo Piano) - Danilo Stankovic","情绪类型":"轻松治愈型","适用内容":"新生儿礼盒开箱慢镜头、baby shower礼物展示、宝宝睡着后的安静画面、品牌理念/工艺展示视频","特征":"钢琴独奏，极简治愈，营造高级感和仪式感。适合中高端婴儿服饰的品牌调性，配合ASMR拆包装声音效果绝佳"},{"BGM名称":"HUMBLE. - Kendrick Lamar (Remix)","情绪类型":"爽感共鸣型","适用内容":"宝宝霍气出场穿搭、多套outfit快速切换展示、宝宝“走秀”视频、高级感产品展示配合慢动作","特征":"强节奏感、自信爆棚，BabyTok上用于宝宝“走秀”类视频极其吸睛，配合慢动作+卡点切换效果最佳"},{"BGM名称":"A Day in My Life - Prodby668","情绪类型":"轻松治愈型","适用内容":"宝宝一天穿搭vlog：晚上睡衣→早上换装→出门outfit→回家换居家服、妈妈日常记录类内容","特征":"Lo-fi风格，慢节奏舞曲感，适合日常记录和“a day in my life”类型内容。BabyTok上这类日常vlog完播率极高"},{"BGM名称":"Storytelling - Adriel","情绪类型":"紧张推进型","适用内容":"数字列表类科普（“5 things you didn't know”）、每个tip配切换画面、产品成分揭秘、婴儿服购买指南","特征":"叙事感强，节奏逐步推进，适合知识科普类内容。配合文字弹出动画和讲解词，信息密度高但不无聊"},{"BGM名称":"Until I Found You - Stephen Sanchez","情绪类型":"轻松治愈型","适用内容":"宝宝成长记录（从新生儿到1岁的穿搭变化）、妈妈的感恩时刻、成长换购计划的情感化展示","特征":"浪漫怀旧风，带感动情绪。适合成长记录类视频，容易引发妈妈们的情感共鸣和评论互动"},{"BGM名称":"Jingle Bells (Modern Remix)","情绪类型":"爽感共鸣型","适用内容":"圣诞节宝宝穿搭、节日礼盒开箱、万圣节/感恩节/复活节等节日专属内容（按季节更换）","特征":"节日氛围BGM，需按季节更换。美国市场节日消费强，节日专属内容流量红利明显，提前2-3周制作发布","成片记录库":"2026/03/15"},{"BGM名称":"original sound - ASMR拆包装/触感音效","情绪类型":"轻松治愈型","适用内容":"产品开箱ASMR（拆纸张/触摸面料声音）、面料质感特写配触感音效、无语言纯视觉+声音展示","特征":"无BGM，依赖环境音和ASMR效果。BabyTok上有机棉的ASMR触感视频完播率极高，配合慢镜头特写效果最佳"},{"BGM名称":"Make It Look Easy - Surfaces","情绪类型":"爽感共鸣型","适用内容":"POV场景切换类（奶奶家vs公园vs生日派对）、多场景穿搭对比、轻松幽默风格的产品展示","特征":"轻快流行音乐风，自带“毫不费力”的潇洒感。适合多场景POV视频，传递“轻松拥有好品味”的品牌调性"},{"BGM名称":"Run Boy Run - Woodkid","情绪类型":"紧张推进型","适用内容":"限时抢购倒计时、库存紧张紧迫感制造、“这个颜色上次发30分钟卖完”、限量款/联名款发布预热","特征":"史诗感推进，强节奏鼓点，适合所有需要制造紧迫感和FOMO的促销类内容。配合倒计时贴纸和库存数量变化效果极佳"}],"count":15}};
+const MICONS={'竞品爆款拆解库（日常搜集）':'🔥','成片记录库':'🎬','框架结构库':'🏗️','号召行动库 CTA':'📣','痛点需求场景库':'💡','爆款评论库':'💬','卖点画面库':'📸','社会证明库':'⭐','权益库':'🎁','BGM情绪库':'🎵'};
+const MCLR={'竞品爆款拆解库（日常搜集）':'#e84aff','成片记录库':'#6c85ff','框架结构库':'#38d9f5','号召行动库 CTA':'#f0a832','痛点需求场景库':'#ff5252','爆款评论库':'#2ec27e','卖点画面库':'#6c85ff','社会证明库':'#ff9100','权益库':'#38d9f5','BGM情绪库':'#ff5252'};
+const MBGS={'竞品爆款拆解库（日常搜集）':'rgba(232,74,255,0.13)','成片记录库':'rgba(79,110,247,0.13)','框架结构库':'rgba(56,217,245,0.13)','号召行动库 CTA':'rgba(240,168,50,0.13)','痛点需求场景库':'rgba(255,82,82,0.1)','爆款评论库':'rgba(46,194,126,0.13)','卖点画面库':'rgba(79,110,247,0.1)','社会证明库':'rgba(255,145,0,0.13)','权益库':'rgba(56,217,245,0.1)','BGM情绪库':'rgba(255,82,82,0.1)'};
+const MKEYS=Object.keys(MATS);
+
+// ============================================================
+// 状态
+// ============================================================
+let appData=null, curCat=MKEYS[0], matQ='', curModel=localStorage.getItem('vvt_model')||'gemini';
+const AK='vvt_akey', GK='vvt_gkey';
+const getAKey=()=>localStorage.getItem(AK)||'';
+const getGKey=()=>localStorage.getItem(GK)||'';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+// ============================================================
+// 模型切换
+// ============================================================
+function setModel(m){
+  curModel=m;
+  localStorage.setItem('vvt_model',m);
+  const isG=m==='gemini';
+  document.getElementById('mb-claude').style.cssText=!isG?'background:rgba(108,133,255,0.15);color:#6c85ff;border:1px solid rgba(108,133,255,0.4)':'background:transparent;color:var(--t2);border:1px solid transparent';
+  document.getElementById('mb-gemini').style.cssText=isG?'background:rgba(66,133,244,0.15);color:#4285f4;border:1px solid rgba(66,133,244,0.4)':'background:transparent;color:var(--t2);border:1px solid transparent';
+  const s=document.getElementById('hdrSub');
+  if(s&&(s.textContent.includes('就绪')||s.textContent.includes('Claude')||s.textContent.includes('Gemini')))
+    s.textContent=isG?'● Gemini 分析就绪':'● Claude 分析就绪';
+}
+
+// ============================================================
+// Key 管理
+// ============================================================
+function toggleKey(){
+  const b=document.getElementById('keyBanner');
+  b.style.display=b.style.display==='none'?'block':'none';
+}
+function saveKey(type){
+  if(type==='claude'){
+    const k=document.getElementById('kiClaude').value.trim();
+    if(!k.startsWith('sk-')){alert('请输入正确的 Claude Key（以 sk- 开头）');return;}
+    localStorage.setItem(AK,k);
+    alert('✅ Claude Key 已保存！');
+  } else {
+    const k=document.getElementById('kiGemini').value.trim();
+    if(!k.startsWith('AIza')){alert('请输入正确的 Gemini Key（以 AIzaSy 开头）');return;}
+    localStorage.setItem(GK,k);
+    setModel('gemini');
+    updateGStatus();
+    alert('✅ Gemini Key 已保存，已切换到 Gemini 模式！');
+  }
+  if(getAKey()||getGKey()){
+    document.getElementById('keyBanner').style.display='none';
+    document.getElementById('keyBtn').style.display='none';
+  }
+}
+function updateGStatus(){
+  const el=document.getElementById('gkSt');if(!el)return;
+  if(getGKey()){el.textContent='已配置 ✅';el.style.background='rgba(46,194,126,0.12)';el.style.color='#2ec27e';}
+  else{el.textContent='未配置';el.style.background='rgba(255,82,82,0.12)';el.style.color='var(--red)';}
+}
+
+// ============================================================
+// API 代理
+// ============================================================
+async function callProxy(body){
+  const r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({error:'Parse error '+r.status}));
+  if(!r.ok||d.error){
+    const errMsg=typeof d.error==='object'?(d.error.message||JSON.stringify(d.error)):String(d.error||'Proxy '+r.status);
+    throw new Error(errMsg);
+  }
+  return d;
+}
+
+async function callAI(claudeBody){
+  if(curModel==='gemini'){
+    // Gemini 直连浏览器（绕过Vercel 4.5MB限制，支持更多图片帧）
+    const gKey=getGKey();
+    if(!gKey) throw new Error('NO_GEMINI_KEY');
+
+    // 构建 Gemini 请求格式
+    const parts=[];
+    for(const msg of claudeBody.messages||[]){
+      const content=Array.isArray(msg.content)?msg.content:[{type:'text',text:msg.content}];
+      for(const c of content){
+        if(c.type==='text') parts.push({text:c.text});
+        else if(c.type==='image'&&c.source?.data) parts.push({inlineData:{mimeType:c.source.media_type||'image/jpeg',data:c.source.data}});
+      }
+    }
+
+    // 使用支持禁用thinking的模型，fallback链
+    // gemini-2.5-flash 和 gemini-2.0-flash 支持 thinkingBudget:0
+    // gemini-2.5-pro 等强制thinking模式，不传thinkingConfig
+    const modelConfigs=[
+      {model:'gemini-2.5-flash',  thinking:false},
+      {model:'gemini-2.0-flash',  thinking:false},
+      {model:'gemini-2.5-pro',    thinking:true},
+      {model:'gemini-3.1-pro-preview', thinking:true},
+    ];
+
+    let lastErr='';
+    for(const {model,thinking} of modelConfigs){
+      try{
+        const genCfg=thinking
+          ?{temperature:0.3,maxOutputTokens:2000}
+          :{temperature:0.3,maxOutputTokens:2000,thinkingConfig:{thinkingBudget:0}};
+        const gemBody={contents:[{role:'user',parts}],generationConfig:genCfg};
+        const r=await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gKey}`,
+          {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(gemBody)}
+        );
+        const d=await r.json();
+        if(d.error) throw new Error(d.error.message||JSON.stringify(d.error));
+        // 提取文本，过滤 thinking 内容
+        const parts_out=d.candidates?.[0]?.content?.parts||[];
+        const text=parts_out.filter(p=>p.text&&!p.thought).map(p=>p.text).join('')
+                 ||parts_out.map(p=>p.text||'').join('');
+        if(!text) throw new Error('Empty response from '+model);
+        return{content:[{type:'text',text}]};
+      }catch(e){
+        lastErr=model+': '+e.message;
+        console.warn('Gemini fallback:',lastErr);
+      }
+    }
+    throw new Error('Gemini 全部模型失败: '+lastErr);
+  } else {
+    // Claude 模式：先走代理
+    try{
+      return await callProxy(claudeBody);
+    }catch(e){
+      // 代理 503（无 key）→ 直连
+      if(e.message.includes('503')||e.message.includes('ANTHROPIC_API_KEY')){
+        const key=getAKey();if(!key)throw new Error('NO_KEY');
+        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify(claudeBody)});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error?.message||'Claude '+r.status);
+        return d;
+      }
+      throw e;
+    }
+  }
+}
+
+// ============================================================
+// 文件上传
+// ============================================================
+function onDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('video/'))startWith(f);}
+function onFileSel(e){const f=e.target.files[0];if(f)startWith(f);}
+function startWith(file){
+  document.getElementById('selFile').textContent='✅ 已选择：'+file.name;
+  document.getElementById('selFile').style.display='block';
+  startAnalysis(file);
+}
+
+// ============================================================
+// 抽帧
+// ============================================================
+async function extractFrames(file){
+  return new Promise(resolve=>{
+    const v=document.createElement('video');v.src=URL.createObjectURL(file);v.muted=true;
+    v.onloadedmetadata=async()=>{
+      const dur=v.duration,n=Math.min(15,Math.max(8,Math.floor(dur/2)));
+      const frames=[],cv=document.createElement('canvas');cv.width=320;cv.height=180;
+      const ctx=cv.getContext('2d');
+      for(let i=0;i<n;i++){
+        const t=(dur/n)*i+0.3;
+        await new Promise(r=>{
+          v.currentTime=Math.min(t,dur-0.1);
+          v.onseeked=()=>{
+            try{ctx.drawImage(v,0,0,320,180);frames.push({time:t,url:cv.toDataURL('image/jpeg',0.6)});}
+            catch(e){frames.push({time:t,url:null});}
+            r();
+          };
+          setTimeout(r,2000);
+        });
+      }
+      URL.revokeObjectURL(v.src);resolve({frames,dur});
+    };
+    v.onerror=()=>resolve({frames:[],dur:30});v.load();
+  });
+}
+
+// ============================================================
+// 视频分析
+// ============================================================
+function uprog(pct,msg,steps){
+  document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('anaStatus').textContent=msg;
+  document.getElementById('stepsList').innerHTML=steps.map(s=>`<div class="si ${s.st}"><div class="sdot"></div><span>${s.tx}</span></div>`).join('');
+}
+
+async function startAnalysis(file){
+  // 切换到分析页
+  document.getElementById('uploadPg').style.display='none';
+  document.getElementById('anaPg').style.display='block';
+  document.getElementById('resPg').style.display='none';
+  document.getElementById('backBtn').style.display='block';
+  document.getElementById('hdrSub').textContent='● 分析中 · '+file.name;
+
+  const steps=[
+    {tx:'读取视频文件',st:'active'},{tx:'提取关键帧截图',st:''},
+    {tx:'AI 分析画面内容',st:''},{tx:'生成分镜脚本',st:''},{tx:'计算数据指标',st:''}
+  ];
+  uprog(8,'读取视频...',steps);
+
+  let frames=[],dur=30;
+  try{const r=await extractFrames(file);frames=r.frames;dur=r.dur;}catch(e){}
+  steps[0].st='done';steps[1].st='done';
+  uprog(32,`已提取 ${frames.length} 帧`,steps);
+  await sleep(200);
+  steps[2].st='active';
+  uprog(46,(curModel==='gemini'?'Gemini':'Claude')+' 分析画面...',steps);
+
+  let result;
+  try{
+    const imgs=frames.filter(f=>f.url).slice(0,8).map(f=>({
+      type:'image',source:{type:'base64',media_type:'image/jpeg',data:f.url.split(',')[1]}
+    }));
+    const content=imgs.length>0?[...imgs,{type:'text',text:buildPrompt(frames.length,dur)}]:[{type:'text',text:buildPrompt(frames.length,dur)}];
+    const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content}]});
+    const txt=data.content?.[0]?.text||'';
+    // 清理 thinking 标签和 markdown，精确提取 JSON
+    const clean=txt.replace(/<thinking>[\s\S]*?<\/thinking>/g,'').replace(/```json\n?|```/g,'').trim();
+    const js=clean.indexOf('{'),je=clean.lastIndexOf('}')+1;
+    if(js===-1)throw new Error('No JSON in response');
+    result=JSON.parse(clean.substring(js,je));
+  }catch(e){
+    console.warn('AI error:',e.message);
+    document.getElementById('anaStatus').textContent='⚠️ AI失败: '+e.message.substring(0,50);
+    if(e.message.includes('NO_KEY')||e.message.includes('NO_GEMINI_KEY')){
+      document.getElementById('keyBanner').style.display='block';
+      document.getElementById('keyBtn').style.display='flex';
+    }
+    result=mockData(frames.length,dur);
+  }
+
+  steps[2].st='done';steps[3].st='done';steps[4].st='active';
+  uprog(90,'计算指标...',steps);
+  await sleep(300);
+  steps[4].st='done';uprog(100,'✅ 完成！',steps);
+  await sleep(500);
+
+  result.frames=frames;
+  appData=result;
+  renderResults(result);
+
+  // 切换到结果页
+  document.getElementById('anaPg').style.display='none';
+  document.getElementById('resPg').style.display='block';
+  document.getElementById('hdrSub').textContent='● 分析报告 · '+file.name;
+  switchTab('shots');
+}
+
+function buildPrompt(n,dur){
+  return `你是专业短视频内容策划师。分析这${n}个关键帧（总时长约${dur.toFixed(0)}秒），只返回JSON，不要任何额外文字：\n{"metrics":{"firstAppear":5.2,"productDuration":8.0,"productRatio":24,"totalDuration":${dur.toFixed(1)},"shotCount":${n}},"tip":"一句优化建议","shots":[{"id":1,"startTime":0,"endTime":4.5,"type":"痛点放大","description":"2-3句画面描述","copywriting":"口播文案"}]}\n镜头类型只能用：痛点放大、产品展示、使用场景、效果对比、行动引导、节日特写、钩子开场。生成全部${n}个镜头，时间连续且总和等于${dur.toFixed(1)}秒。`;
+}
+
+function mockData(n,dur){
+  const types=['痛点放大','产品展示','使用场景','效果对比','行动引导'];
+  const sd=dur/n;
+  return{metrics:{firstAppear:parseFloat((sd*2).toFixed(1)),productDuration:parseFloat((dur*0.2).toFixed(1)),productRatio:20,totalDuration:parseFloat(dur.toFixed(1)),shotCount:n},
+    tip:'⚠️ AI分析失败，显示演示数据，请检查API Key配置',
+    shots:Array.from({length:n},(_,i)=>({id:i+1,startTime:parseFloat((i*sd).toFixed(2)),endTime:parseFloat(((i+1)*sd).toFixed(2)),type:types[i%5],description:'演示数据 — 请配置正确的API Key',copywriting:'演示文案'}))};
+}
+
+// ============================================================
+// 渲染结果
+// ============================================================
+function renderResults(d){
+  const m=d.metrics;
+  document.getElementById('metGrid').innerHTML=[
+    {v:m.firstAppear+'秒',l:'产品首次出现',h:'黄金3秒内'},
+    {v:m.productDuration+'秒',l:'产品露出时长',h:'建议30%+'},
+    {v:m.productRatio+'%',l:'产品露出占比',h:'高转化40%+'},
+    {v:m.totalDuration+'秒',l:'视频总时长',h:'15-60秒最佳'},
+    {v:m.shotCount+'个',l:'镜头数量',h:'2-3秒/镜头'}
+  ].map(c=>`<div class="mc"><div class="mv">${c.v}</div><div class="ml">${c.l}</div><div class="mh">${c.h}</div></div>`).join('');
+  document.getElementById('tipBar').textContent='💡 '+d.tip;
+  document.getElementById('shCnt').textContent=`（${d.shots.length}个分镜）`;
+
+  document.getElementById('shGrid').innerHTML=d.shots.map((s,i)=>{
+    const t=gtc(s.type),f=d.frames&&d.frames[i];
+    const th=f&&f.url?`<img src="${f.url}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;background:linear-gradient(135deg,var(--bg3),var(--bg4))">🎬</div>`;
+    return`<div class="sh" onclick="jumpTo(${i})"><div class="sh-t">${th}<div class="sh-tag" style="background:${t.bg};color:${t.c}">${s.type}</div><div class="sh-num">#${s.id}</div></div><div class="sh-time">${s.startTime.toFixed(1)}s–${s.endTime.toFixed(1)}s</div><div class="sh-lbl">${s.type}</div></div>`;
+  }).join('');
+
+  const cnt={};d.shots.forEach(s=>{cnt[s.type]=(cnt[s.type]||0)+1;});
+  document.getElementById('typeRow').innerHTML=Object.entries(cnt).map(([t,c])=>{const ti=gtc(t);return`<div class="tb" style="background:${ti.bg}"><span style="font-size:18px;font-weight:800;color:${ti.c}">${c}</span><span style="color:${ti.c}">${t}</span></div>`;}).join('');
+
+  document.getElementById('scriptBody').innerHTML=d.shots.map((s,i)=>{
+    const t=gtc(s.type),f=d.frames&&d.frames[i];
+    const th=f&&f.url?`<img src="${f.url}" style="width:80px;height:45px;border-radius:6px;object-fit:cover;">`:`<div style="width:80px;height:45px;background:var(--bg3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px">🎬</div>`;
+    return`<tr id="sr${i}"><td><strong style="color:var(--gold)">#${s.id}</strong></td><td style="font-size:12px;color:var(--t2);white-space:nowrap">${s.startTime.toFixed(2)}s<br>${s.endTime.toFixed(2)}s</td><td><span style="background:${t.bg};color:${t.c};padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap">${s.type}</span></td><td>${s.description}</td><td>${th}</td><td style="color:var(--t2);font-size:12px">${s.copywriting}</td></tr>`;
+  }).join('');
+
+  const tot=m.totalDuration;
+  document.getElementById('structBar').innerHTML=d.shots.map(s=>{const p=((s.endTime-s.startTime)/tot*100).toFixed(1),c=SC[s.type]||'#8b90a8';return`<div class="ss" style="width:${p}%;background:${c}20;border-right:1px solid ${c}40;color:${c}">${parseFloat(p)>7?s.type:''}</div>`;}).join('');
+
+  const tst={};d.shots.forEach(s=>{if(!tst[s.type])tst[s.type]={n:0,dur:0};tst[s.type].n++;tst[s.type].dur+=s.endTime-s.startTime;});
+  document.getElementById('structDet').innerHTML=Object.entries(tst).map(([t,v])=>{const p=(v.dur/tot*100).toFixed(0),c=SC[t]||'#8b90a8';return`<div class="scard"><div class="sc-t" style="color:${c}">${t}</div><div class="sc-n">${v.n}镜</div><div class="sc-p">${p}%</div></div>`;}).join('');
+
+  const main=Object.entries(tst).sort((a,b)=>b[1].n-a[1].n)[0];
+  document.getElementById('structIns').innerHTML=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">📊 结构洞察</div><div style="font-size:13px;color:var(--t2);line-height:2">• 共 <strong style="color:var(--t)">${d.shots.length}</strong> 个分镜，主要：<strong style="color:var(--ac2)">${main[0]}</strong>（${main[1].n}个）<br>• 产品露出 <strong style="color:var(--gold)">${m.productRatio}%</strong>，${m.productRatio>=40?'✅ 达标（40%+）':'⚠️ 建议提升至40%+'}<br>• 产品首现 <strong style="color:var(--gold)">${m.firstAppear}</strong>秒，${m.firstAppear<=3?'✅ 黄金3秒内':m.firstAppear<=5?'🟡 建议提前至3秒':'⚠️ 建议提前至3秒内'}<br>• 平均每镜 <strong style="color:var(--t)">${(m.totalDuration/m.shotCount).toFixed(1)}</strong>秒，${m.totalDuration/m.shotCount<=3?'✅ 节奏紧凑':'⚠️ 建议加快节奏'}</div>`;
+
+  renderShotSel();
+}
+
+// ============================================================
+// AI 改编脚本
+// ============================================================
+async function genScript(){
+  const name=document.getElementById('pName').value.trim();
+  if(!name){alert('请输入产品名称');return;}
+  const btn=document.getElementById('genBtn');btn.disabled=true;btn.innerHTML='<span>⏳</span><span>生成中...</span>';
+  const struct=appData.shots.map(s=>`镜头${s.id}[${s.type},${(s.endTime-s.startTime).toFixed(1)}秒]`).join('、');
+  const pts=document.getElementById('pPoints').value.trim();
+  const aud=document.getElementById('pAud').value.trim();
+  try{
+    const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:`你是顶级短视频脚本策划师。\n原视频结构：${struct}\n产品：${name}\n卖点：${pts||'请根据产品名推测'}\n用户：${aud||'普通消费者'}\n基于原视频结构生成改编脚本。只返回JSON：\n{"title":"脚本标题","shots":[{"id":1,"type":"类型","duration":5.0,"description":"画面描述","copywriting":"口播文案"}]}`}]});
+    const txt=data.content?.[0]?.text||'';
+    const clean=txt.replace(/<thinking>[\s\S]*?<\/thinking>/g,'').replace(/```json\n?|```/g,'').trim();
+    const js=clean.indexOf('{'),je=clean.lastIndexOf('}')+1;
+    renderAI(JSON.parse(clean.substring(js,je)));
+  }catch(e){
+    renderAI({title:name+'爆款脚本',shots:appData.shots.map((s,i)=>({id:i+1,type:s.type,duration:parseFloat((s.endTime-s.startTime).toFixed(1)),description:`【${s.type}】${name}相关场景`,copywriting:`${name}核心卖点展示`}))});
+  }
+  btn.disabled=false;btn.innerHTML='<span>✨</span><span>重新生成</span>';
+}
+function renderAI(r){
+  document.getElementById('aiOut').classList.add('on');
+  document.getElementById('aiContent').innerHTML=r.shots.map(s=>{const t=gtc(s.type);return`<div class="aishot"><div class="ashhdr"><span class="ashnum">镜头${s.id}</span><span class="ashb" style="background:${t.bg};color:${t.c}">${s.type}</span><span class="ashdur">${s.duration}s</span></div><div class="ashdesc">${s.description}</div><div class="ashcopy"><span class="ack">口播：</span>${s.copywriting}</div></div>`;}).join('');
+}
+function copyAll(){
+  const txt=Array.from(document.querySelectorAll('.aishot')).map(el=>el.textContent.replace(/\s+/g,' ').trim()).join('\n\n');
+  navigator.clipboard.writeText(txt).then(()=>{const b=document.querySelector('.copyall');b.textContent='✅ 已复制';setTimeout(()=>b.textContent='📋 复制全部',2000);});
+}
+
+// ============================================================
+// 视频生成（Nano Banana 2 + Veo 3.1）
+// ============================================================
+function renderShotSel(){
+  const el=document.getElementById('shotSel');if(!el||!appData)return;
+  el.innerHTML=appData.shots.map((s,i)=>{const t=gtc(s.type);return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:${t.bg};border:1px solid ${t.c}30;padding:5px 12px;border-radius:10px;font-size:12px;color:${t.c};font-weight:600"><input type="checkbox" checked data-idx="${i}" style="accent-color:${t.c}">#${s.id} ${s.type}</label>`;}).join('');
+}
+
+async function genVideos(){
+  if(!getGKey()){alert('请先在顶部 🔑 API Key 里配置 Gemini Key');return;}
+  if(!appData){alert('请先完成视频分析');return;}
+  const sel=Array.from(document.querySelectorAll('#shotSel input:checked')).map(cb=>parseInt(cb.dataset.idx)).filter(i=>!isNaN(i));
+  if(!sel.length){alert('请选择至少一个镜头');return;}
+  const style=document.getElementById('vStyle').value;
+  const portrait=document.getElementById('portrait').checked;
+  const btn=document.getElementById('vBtn');btn.disabled=true;btn.innerHTML='<span>⏳</span><span>生成中...</span>';
+  document.getElementById('vOutput').style.display='block';
+  document.getElementById('vProg').innerHTML='';
+  for(const idx of sel) await genOneVideo(appData.shots[idx],idx,style,portrait);
+  btn.disabled=false;btn.innerHTML='<span>🎬</span><span>开始生成视频</span>';
+}
+
+async function genOneVideo(shot,idx,style,portrait){
+  const prog=document.getElementById('vProg');
+  const cid='vc'+idx;
+  const t=gtc(shot.type);
+  prog.insertAdjacentHTML('beforeend',`<div id="${cid}" class="vcard"><div class="vchdr"><span style="background:${t.bg};color:${t.c};font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px">#${shot.id} ${shot.type}</span><span style="font-size:12px;color:var(--t2)">${shot.startTime.toFixed(1)}s–${shot.endTime.toFixed(1)}s</span><span id="${cid}st" style="margin-left:auto;font-size:12px;color:var(--t2)">🔄 启动...</span></div><div id="${cid}bd" style="font-size:13px;color:var(--t2)">准备中...</div></div>`);
+
+  const ar=portrait?'9:16':'16:9';
+  const shotSec=parseFloat(shot.endTime)-parseFloat(shot.startTime);const dur=shotSec>=8?8:shotSec>=7?7:shotSec>=6?6:shotSec>=5?5:4; // 严格整数4-8
+  const imgPrompt=`${shot.description}. ${portrait?'Vertical 9:16':'Landscape 16:9'}. ${style}. Photorealistic, no text, no watermark.`;
+  const vidPrompt=`${shot.description}. ${shot.copywriting?'Scene: '+shot.copywriting+'.':''} ${style}. ${ar} format. ${dur} seconds. Smooth camera movement. No text overlays. Baby clothing commercial.`;
+
+  function setSt(st,bd){
+    const s=document.getElementById(cid+'st');if(s)s.textContent=st;
+    if(bd!==undefined){const b=document.getElementById(cid+'bd');if(b)b.innerHTML=bd;}
+  }
+  function getBd(){const b=document.getElementById(cid+'bd');return b?b.innerHTML:'';}
+
+  try{
+    // Step 1: Nano Banana 2 生成首帧
+    setSt('🖼️ Nano Banana 2 生成首帧...','');
+    const imgR=await callProxy({
+      __gemini:true,
+      model:'gemini-3-pro-image-preview',
+      body:{
+        contents:[{parts:[{text:`Generate a photorealistic image: ${imgPrompt}`}]}],
+        generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
+      }
+    });
+    let imgB64=null,imgMime='image/png';
+    for(const p of imgR.candidates?.[0]?.content?.parts||[]){
+      if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}
+    }
+    let bHtml='';
+    if(imgB64){
+      bHtml=`<img src="data:${imgMime};base64,${imgB64}" style="width:${portrait?'100px':'180px'};height:${portrait?'178px':'101px'};object-fit:cover;border-radius:8px;margin-bottom:10px;display:block">`;
+      setSt('✅ 首帧完成，Veo 3.1 生成视频...',bHtml);
+    } else {
+      setSt('⚠️ 首帧失败，直接文生视频...','');
+    }
+
+    // Step 2: Veo 3.1 生成视频
+    // 正确格式：instances + parameters（来自模型列表的 predictLongRunning 接口）
+    const vInstance={prompt:vidPrompt};
+    if(imgB64) vInstance.image={bytesBase64Encoded:imgB64,mimeType:imgMime};
+
+    const vR=await callProxy({
+      __veo:true,
+      model:'veo-3.1-generate-preview',
+      instances:[vInstance],
+      parameters:{aspectRatio:ar,durationSeconds:dur,sampleCount:1,personGeneration:'allow_adult'}
+    });
+
+    if(vR.error) throw new Error(vR.error);
+    const opName=vR.name||vR.operationName;
+    if(!opName) throw new Error('未获取到任务ID，响应：'+JSON.stringify(vR).substring(0,100));
+
+    // 轮询进度
+    let done=false,att=0;
+    while(!done&&att<40){
+      await sleep(6000);att++;
+      setSt(`🎬 Veo生成中... (${att*6}s)`,getBd());
+      const pR=await callProxy({__veo_poll:true,opName});
+      if(pR.done||pR.error){
+        done=true;
+        if(pR.error) throw new Error(pR.error.message||pR.error);
+        const vids=pR.response?.generatedVideos||[];
+        if(vids.length){
+          const uri=vids[0].video?.uri,b64=vids[0].video?.bytesBase64Encoded,prev=getBd();
+          if(uri) setSt('✅ 视频生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${uri}"></video><br><a href="${uri}" download="shot${shot.id}.mp4" style="color:var(--ac2);font-size:12px">⬇ 下载</a>`);
+          else if(b64) setSt('✅ 生成完成！',prev+`<video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="data:video/mp4;base64,${b64}"></video>`);
+          else setSt('⚠️ 无视频输出',prev);
+        } else setSt('⚠️ 无输出',getBd());
+      }
+    }
+    if(!done) setSt('⏰ 超时（视频仍在生成，可稍后在AI Studio查看）',getBd());
+
+  }catch(e){
+    setSt('❌ '+e.message.substring(0,60),`<div style="font-size:12px;color:var(--red);margin-top:6px">${e.message}</div>`);
+  }
+}
+
+// ============================================================
+// 素材库
+// ============================================================
+function initMat(){
+  const el=document.getElementById('matCats');if(!el)return;
+  el.innerHTML=MKEYS.map((cat,i)=>{
+    const on=cat===curCat,bg=on?MBGS[cat]:'var(--bg2)',c=on?MCLR[cat]:'var(--t2)',bo=on?`1px solid ${MCLR[cat]}50`:'1px solid var(--b)';
+    return`<button class="mcat" onclick="switchCat(${i})" style="background:${bg};color:${c};border:${bo}">${MICONS[cat]||'📁'} ${cat} <span style="opacity:.65">${MATS[cat].count}</span></button>`;
+  }).join('');
+  renderMat();
+}
+function switchCat(i){curCat=MKEYS[i];initMat();}
+function filterMat(){matQ=(document.getElementById('matSrch')?.value||'').toLowerCase();renderMat();}
+function renderMat(){
+  const el=document.getElementById('matGrid');if(!el)return;
+  if(matQ){
+    let res=[];Object.entries(MATS).forEach(([cat,d])=>d.records.forEach(r=>{if(Object.values(r).join(' ').toLowerCase().includes(matQ))res.push({...r,_c:cat});}));
+    el.innerHTML=`<div style="font-size:13px;color:var(--t2);margin-bottom:12px">找到 <strong style="color:var(--t)">${res.length}</strong> 条</div>`+(res.length?`<div class="mgrid">${res.map((r,i)=>mcard(r,r._c,i)).join('')}</div>`:'<div style="text-align:center;padding:40px;color:var(--t2)">无结果</div>');
+    return;
+  }
+  const d=MATS[curCat];if(!d)return;
+  el.innerHTML=`<div style="font-size:13px;color:var(--t2);margin-bottom:12px">共 <strong style="color:var(--t)">${d.count}</strong> 条</div><div class="mgrid">${d.records.map((r,i)=>mcard(r,curCat,i)).join('')}</div>`;
+}
+function mcard(r,cat,i){
+  const c=MCLR[cat]||'#6c85ff',bg=MBGS[cat]||'rgba(79,110,247,0.12)',icon=MICONS[cat]||'📁';
+  const keys=Object.keys(r).filter(k=>k!=='_c'),title=(r[keys[0]]||`素材#${i+1}`).substring(0,90);
+  const ci=MKEYS.indexOf(cat);
+  const act=cat.includes('CTA')||cat.includes('框架')||cat.includes('痛点')||cat.includes('评论');
+  return`<div class="mcard" onclick="copyMat(this,${i},${ci})"><div style="margin-bottom:7px"><span style="background:${bg};color:${c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">${icon} ${cat.split('库')[0]}</span></div><div class="mttl">${title}${r[keys[0]]&&r[keys[0]].length>90?'...':''}</div>${keys.slice(1,4).map(k=>r[k]?`<div class="mrow"><span class="mk">${k.substring(0,8)}</span><span class="mv2">${String(r[k]).substring(0,50)}${String(r[k]).length>50?'...':''}</span></div>`:'').join('')}<div style="margin-top:8px;display:flex;gap:8px;align-items:center">${act?`<button onclick="event.stopPropagation();matToAI(${i},${ci})" style="background:rgba(79,110,247,0.1);border:1px solid rgba(79,110,247,0.3);color:var(--ac2);padding:3px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">→ AI改编</button>`:''}<span style="font-size:11px;color:var(--t3)">点击复制</span></div></div>`;
+}
+function copyMat(el,i,ci){
+  const cat=MKEYS[ci],r=MATS[cat]?.records[i];if(!r)return;
+  const txt=Object.entries(r).filter(([k])=>k!=='_c').map(([k,v])=>`[${k}] ${v}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>{el.style.borderColor='#2ec27e';el.style.background='rgba(46,194,126,0.06)';setTimeout(()=>{el.style.borderColor='';el.style.background='';},1500);}).catch(()=>{});
+}
+function matToAI(i,ci){
+  const cat=MKEYS[ci],r=MATS[cat]?.records[i];if(!r)return;
+  const keys=Object.keys(r),name=r[keys[0]]||'';
+  // 抓取所有有价值的字段：卖点、话术、钩子、核心逻辑、框架名、逻辑等
+  const valueKeys=['卖点','话术','钩子','核心逻辑','框架','逻辑','描述','内容','文案','场景','痛点','CTA','行动'];
+  const pts=Object.entries(r)
+    .filter(([k])=>k!=='_c'&&keys.indexOf(k)>0&&valueKeys.some(vk=>k.includes(vk)))
+    .map(([k,v])=>`${k}: ${v}`).join('\n');
+  // 如果没抓到，把所有非标题字段都填进去
+  const fallback=Object.entries(r).filter(([k])=>k!=='_c'&&keys.indexOf(k)>0&&r[k]).map(([k,v])=>`${k}: ${v}`).join('\n');
+  const aud=r['适用品类']||r['目标用户']||'';
+  if(name)document.getElementById('pName').value=name.substring(0,80);
+  document.getElementById('pPoints').value=(pts||fallback).substring(0,600);
+  if(aud)document.getElementById('pAud').value=aud.substring(0,100);
+  switchTab('ai');
+}
+
+// ============================================================
+// 导出
+// ============================================================
+function expCSV(){if(!appData)return;dl('分镜脚本.csv','\uFEFF镜头,开始时间,结束时间,类型,画面描述,文案口播\n'+appData.shots.map(s=>`${s.id},${s.startTime},${s.endTime},"${s.type}","${s.description.replace(/"/g,'""')}","${s.copywriting.replace(/"/g,'""')}"`).join('\n'),'text/csv');}
+function expJSON(){if(!appData)return;const d={...appData};delete d.frames;dl('视频分析.json',JSON.stringify(d,null,2),'application/json');}
+function expMD(){if(!appData)return;const m=appData.metrics;dl('视频分析报告.md',`# 爆款视频拆解报告\n\n## 核心指标\n| 指标 | 数值 |\n|------|------|\n| 产品首次出现 | ${m.firstAppear}秒 |\n| 产品露出时长 | ${m.productDuration}秒 |\n| 产品露出占比 | ${m.productRatio}% |\n| 视频总时长 | ${m.totalDuration}秒 |\n| 镜头数量 | ${m.shotCount}个 |\n\n> 💡 ${appData.tip}\n\n## 分镜脚本\n| 镜头 | 时间段 | 类型 | 画面描述 | 口播文案 |\n|------|--------|------|----------|----------|\n`+appData.shots.map(s=>`| #${s.id} | ${s.startTime.toFixed(1)}s–${s.endTime.toFixed(1)}s | ${s.type} | ${s.description} | ${s.copywriting} |`).join('\n'),'text/markdown');}
+function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
+
+// ============================================================
+// 导航
+// ============================================================
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.tab===t));
+  ['shots','script','struct','ai','video','mat','export'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?'block':'none';
+  });
+  if(t==='mat')setTimeout(initMat,50);
+  if(t==='video')updateGStatus();
+}
+function jumpTo(i){
+  switchTab('script');
+  setTimeout(()=>{const r=document.getElementById('sr'+i);if(r){r.scrollIntoView({behavior:'smooth',block:'center'});r.style.background='rgba(79,110,247,0.1)';setTimeout(()=>r.style.background='',1800);}},100);
+}
+function resetApp(){
+  appData=null;
+  document.getElementById('backBtn').style.display='none';
+  document.getElementById('hdrSub').textContent=curModel==='gemini'?'● Gemini 分析就绪':'● Claude 分析就绪';
+  document.getElementById('selFile').style.display='none';
+  document.getElementById('fileInp').value='';
+  document.getElementById('aiOut').classList.remove('on');
+  document.getElementById('uploadPg').style.display='block';
+  document.getElementById('anaPg').style.display='none';
+  document.getElementById('resPg').style.display='none';
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+setModel(curModel);
+updateGStatus();
+// 检查代理
+fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({__ping:true})})
+  .then(r=>r.json())
+  .then(d=>{if(d.ok)console.log('✅ 服务端代理正常');else needKey();})
+  .catch(()=>needKey());
+function needKey(){
+  if(!getAKey()&&!getGKey()){
+    setTimeout(()=>{document.getElementById('keyBanner').style.display='block';document.getElementById('keyBtn').style.display='flex';},800);
+  }
+}
+// 显示已保存的Key（脱敏）
+if(getAKey()){const i=document.getElementById('kiClaude');if(i)i.value=getAKey().substring(0,8)+'••••••••';}
+if(getGKey()){const i=document.getElementById('kiGemini');if(i)i.value=getGKey().substring(0,8)+'••••••••';}
+</script>
+</body>
+</html>
