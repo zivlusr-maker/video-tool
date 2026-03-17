@@ -125,7 +125,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v11</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v13</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -241,6 +241,21 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div style="font-size:12px;color:var(--t2)">在顶部 🔑 API Key 里填入 Gemini Key 即可用于视频生成</div>
       </div>
       <!-- 产品图片上传 -->
+      <!-- yunwu.ai Key 配置 -->
+      <div class="vbox">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          🔑 yunwu.ai Token <span id="ywSt" style="font-size:11px;padding:2px 10px;border-radius:10px;background:rgba(255,82,82,0.12);color:var(--red)">未配置</span>
+          <span style="font-size:11px;color:var(--t2);font-weight:400">— 无配额限制，按次付费 ~$0.4/视频</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:8px">
+          <input class="finp" type="password" id="ywKeyInp" placeholder="sk-moubUj..." style="flex:1;margin-bottom:0;font-family:monospace">
+          <button onclick="saveYwKey()" style="background:linear-gradient(135deg,#f97316,#ef4444);border:none;border-radius:9px;padding:0 20px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">保存</button>
+        </div>
+        <div style="font-size:11px;color:var(--t2)">
+          从你的 <a href="https://yunwu.ai" target="_blank" style="color:#f97316">yunwu.ai</a> 账号获取 Token · 配置后「生成视频」将优先走 yunwu.ai · Key 存本地不上传
+        </div>
+      </div>
+
       <div class="vbox" id="prodImgBox">
         <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
           🖼️ 上传你的产品图片 <span style="font-size:11px;color:var(--t2);font-weight:400">（用于保持视频中产品一致性）</span>
@@ -295,9 +310,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </label>
         </div>
       </div>
-      <button class="gbtn2" id="vBtn" onclick="genVideos()"><span>🎬</span><span>开始生成视频</span></button>
-      <button class="gbtn2" id="imgBtn" onclick="genSceneImages()" style="background:linear-gradient(135deg,#8b5cf6,#e84aff);margin-left:10px"><span>🖼️</span><span>只生成场景图</span></button>
-      <div style="font-size:11px;color:var(--t2);margin-top:-10px;margin-bottom:16px">↑ 不消耗 Veo 配额 · 用 Nano Banana Pro 生成 · 可下载保存</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+        <button class="gbtn2" id="vBtn" onclick="genVideos()"><span>🎬</span><span>Google Veo 生成视频</span></button>
+        <button class="gbtn2" id="ywBtn" onclick="genVideosYunwu()" style="background:linear-gradient(135deg,#f97316,#ef4444)"><span>⚡</span><span>yunwu.ai 生成视频</span></button>
+        <button class="gbtn2" id="imgBtn" onclick="genSceneImages()" style="background:linear-gradient(135deg,#8b5cf6,#e84aff)"><span>🖼️</span><span>只生成场景图</span></button>
+      </div>
+      <div style="font-size:11px;color:var(--t2);margin-top:-10px;margin-bottom:8px">↑ 不消耗 Veo 配额 · 用 Nano Banana Pro 生成 · 可下载保存</div>
+      <div id="cacheStatus" style="font-size:12px;color:var(--green);background:rgba(46,194,126,0.08);border:1px solid rgba(46,194,126,0.2);padding:8px 14px;border-radius:8px;margin-bottom:16px;display:none">
+        ✅ 场景图已缓存，点「开始生成视频」时将直接用缓存图作为 Veo 首帧，节省 Nano Banana 配额
+      </div>
       <div id="vOutput" style="display:none">
         <div style="font-size:14px;font-weight:700;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--b)">生成进度</div>
         <div id="vProg"></div>
@@ -337,7 +358,7 @@ const MKEYS=Object.keys(MATS);
 // ============================================================
 // 状态
 // ============================================================
-let appData=null, aiScript=null, productImgB64=null, productImgMime='image/jpeg', curCat=MKEYS[0], matQ='', curModel=localStorage.getItem('vvt_model')||'gemini';
+let appData=null, aiScript=null, productImgB64=null, productImgMime='image/jpeg', sceneImgCache={}, curCat=MKEYS[0], matQ='', curModel=localStorage.getItem('vvt_model')||'gemini';
 const AK='vvt_akey', GK='vvt_gkey';
 const getAKey=()=>localStorage.getItem(AK)||'';
 const getGKey=()=>localStorage.getItem(GK)||'';
@@ -718,6 +739,157 @@ function renderShotSel(){
   el.innerHTML=shots.map((s,i)=>{const t=gtc(s.type);return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;background:${t.bg};border:1px solid ${t.c}30;padding:5px 12px;border-radius:10px;font-size:12px;color:${t.c};font-weight:600"><input type="checkbox" checked data-idx="${i}" style="accent-color:${t.c}">#${s.id||i+1} ${s.type}</label>`;}).join('');
 }
 
+// ===== yunwu.ai Key 管理 =====
+const YW_KEY='vvt_yw_key';
+function getYwKey(){return localStorage.getItem(YW_KEY)||'';}
+function saveYwKey(){
+  const k=document.getElementById('ywKeyInp').value.trim();
+  if(!k.startsWith('sk-')){alert('请输入正确的 yunwu.ai Token（以 sk- 开头）');return;}
+  localStorage.setItem(YW_KEY,k);
+  updateYwStatus();
+  alert('✅ yunwu.ai Token 已保存！');
+}
+function updateYwStatus(){
+  const el=document.getElementById('ywSt');if(!el)return;
+  const k=getYwKey();
+  if(k){el.textContent='已配置 ✅';el.style.background='rgba(46,194,126,0.12)';el.style.color='#2ec27e';
+    const inp=document.getElementById('ywKeyInp');if(inp)inp.value=k.substring(0,8)+'••••••••';}
+  else{el.textContent='未配置';el.style.background='rgba(255,82,82,0.12)';el.style.color='var(--red)';}
+}
+
+// ===== yunwu.ai 视频生成 =====
+async function genVideosYunwu(){
+  const ywKey=getYwKey();
+  if(!ywKey){alert('请先配置 yunwu.ai Token');return;}
+  if(!appData){alert('请先完成视频分析');return;}
+
+  const useSrc=document.querySelector('input[name="vidSrc"]:checked')?.value||'original';
+  let shots=[];
+  if(useSrc==='ai'){
+    if(!aiScript?.shots?.length){alert('请先在「✨ AI改编脚本」Tab 生成AI脚本');return;}
+    shots=aiScript.shots;
+  }else{
+    shots=appData.shots;
+  }
+
+  const sel=Array.from(document.querySelectorAll('#shotSel input:checked')).map(cb=>parseInt(cb.dataset.idx)).filter(i=>!isNaN(i));
+  if(!sel.length){alert('请选择至少一个镜头');return;}
+  const selShots=sel.map(idx=>({
+    ...shots[idx]||shots[Math.min(idx,shots.length-1)],
+    startTime:appData.shots[idx]?.startTime||0,
+    endTime:appData.shots[idx]?.endTime||5,
+    id:idx+1,
+    _idx:idx
+  }));
+
+  const portrait=document.getElementById('portrait').checked;
+  const style=document.getElementById('vStyle').value;
+  const size=portrait?'1024x1792':'1920x1080';
+
+  const btn=document.getElementById('ywBtn');
+  btn.disabled=true;btn.innerHTML='<span>⏳</span><span>生成中...</span>';
+  document.getElementById('vOutput').style.display='block';
+  document.getElementById('vProg').innerHTML='';
+
+  for(let i=0;i<selShots.length;i++){
+    await genOneVideoYunwu(selShots[i],i,style,size,portrait,ywKey);
+  }
+  btn.disabled=false;btn.innerHTML='<span>⚡</span><span>yunwu.ai 生成视频</span>';
+}
+
+async function genOneVideoYunwu(shot,i,style,size,portrait,ywKey){
+  const cid='yw'+i;
+  const t=gtc(shot.type||'产品展示');
+  document.getElementById('vProg').insertAdjacentHTML('beforeend',
+    `<div id="${cid}" class="vcard">
+      <div class="vchdr">
+        <span style="background:${t.bg};color:${t.c};font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px">#${shot.id||i+1} ${shot.type||'镜头'}</span>
+        <span style="font-size:11px;color:#f97316;background:rgba(249,115,22,0.1);padding:2px 8px;border-radius:6px;font-weight:600">yunwu.ai</span>
+        <span style="font-size:12px;color:var(--t2)">${(shot.startTime||0).toFixed(1)}s–${(shot.endTime||5).toFixed(1)}s</span>
+        <span id="${cid}st" style="margin-left:auto;font-size:12px;color:var(--t2)">🔄 启动...</span>
+      </div>
+      <div id="${cid}bd" style="font-size:13px;color:var(--t2)">准备中...</div>
+    </div>`
+  );
+
+  const setSt=(st,bd)=>{
+    const s=document.getElementById(cid+'st');if(s)s.textContent=st;
+    if(bd!==undefined){const b=document.getElementById(cid+'bd');if(b)b.innerHTML=bd;}
+  };
+
+  try{
+    // Step1: 确定首帧图片
+    // 优先顺序：缓存的场景图 > 产品图 > 无图（纯文字生成）
+    const cached=sceneImgCache[shot._idx||i];
+    let inputImage=null;
+
+    if(cached){
+      inputImage=cached.dataUrl;
+      setSt('✅ 使用缓存场景图',`<img src="${cached.dataUrl}" style="width:160px;height:90px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block"><div style="font-size:11px;color:var(--green)">✅ 来自场景图缓存</div>`);
+    } else if(productImgB64){
+      inputImage=`data:${productImgMime};base64,${productImgB64}`;
+      setSt('🖼️ 使用产品图作为参考','<div style="font-size:11px;color:var(--t2)">使用上传的产品图...</div>');
+    } else {
+      setSt('📝 纯文字生成（无参考图）','<div style="font-size:11px;color:var(--t2)">无参考图，纯文字生成...</div>');
+    }
+
+    // Step2: 构建 prompt（英文，yunwu.ai 效果更好）
+    const vidPrompt=`${shot.description||''}. ${shot.copywriting?'Context: '+shot.copywriting+'.':''} ${style}. Professional product video. No text overlays.`.trim();
+
+    // Step3: 提交 yunwu.ai 任务
+    setSt('⚡ 提交 yunwu.ai 任务...',document.getElementById(cid+'bd')?.innerHTML||'');
+    const createBody={model:'veo_3_1',prompt:vidPrompt,size};
+    if(inputImage) createBody.input_image=inputImage;
+
+    const createR=await fetch('https://yunwu.ai/v1/video/create',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+ywKey},
+      body:JSON.stringify(createBody)
+    });
+    const createD=await createR.json();
+    if(!createR.ok||createD.error) throw new Error(createD.error||createD.message||'创建任务失败 '+createR.status);
+
+    const taskId=createD.id||createD.task_id;
+    if(!taskId) throw new Error('未获取到任务ID: '+JSON.stringify(createD).substring(0,100));
+    setSt(`⏳ 任务已提交 (ID: ${taskId.substring(0,8)}...)`,document.getElementById(cid+'bd')?.innerHTML||'');
+
+    // Step4: 轮询任务状态（参照n8n工作流）
+    let done=false,att=0;
+    while(!done&&att<40){
+      await sleep(8000);att++;
+      setSt(`⏳ 生成中... (${att*8}s)`,document.getElementById(cid+'bd')?.innerHTML||'');
+
+      const pollR=await fetch(`https://yunwu.ai/v1/videos/${taskId}`,{
+        headers:{'Authorization':'Bearer '+ywKey}
+      });
+      const pollD=await pollR.json();
+
+      if(pollD.status==='completed'||pollD.status==='success'){
+        done=true;
+        const videoUrl=pollD.video_url||pollD.url||pollD.output?.url||pollD.result?.url;
+        const prev=document.getElementById(cid+'bd')?.innerHTML||'';
+        if(videoUrl){
+          setSt('✅ 视频生成完成！',prev+`
+            <video controls style="width:100%;max-width:${portrait?'200px':'360px'};border-radius:8px;margin-top:8px" src="${videoUrl}"></video>
+            <br><a href="${videoUrl}" target="_blank" download="yw_shot${shot.id||i+1}.mp4" style="color:#f97316;font-size:12px;margin-top:4px;display:inline-block">⬇ 下载视频</a>
+            <span style="font-size:11px;color:var(--t2);margin-left:12px">by yunwu.ai</span>`);
+        } else {
+          setSt('⚠️ 完成但无视频URL','响应: '+JSON.stringify(pollD).substring(0,150));
+        }
+      } else if(pollD.status==='failed'||pollD.status==='error'){
+        done=true;
+        throw new Error('生成失败: '+(pollD.error||pollD.message||JSON.stringify(pollD).substring(0,100)));
+      }
+      // 其他状态（pending/processing）继续等待
+    }
+    if(!done) setSt('⏰ 超时（任务仍在生成，可稍后在 yunwu.ai 控制台查看）','');
+
+  }catch(e){
+    document.getElementById(cid+'st').textContent='❌ '+e.message.substring(0,50);
+    document.getElementById(cid+'bd').innerHTML=`<div style="font-size:12px;color:var(--red)">${e.message}</div>`;
+  }
+}
+
 async function genSceneImages(){
   if(!getGKey()){alert('请先在顶部 🔑 API Key 里配置 Gemini Key');return;}
   if(!appData){alert('请先完成视频分析');return;}
@@ -782,11 +954,15 @@ async function genSceneImages(){
       if(imgB64){
         const ext=imgMime.includes('png')?'png':'jpg';
         const dataUrl=`data:${imgMime};base64,${imgB64}`;
-        document.getElementById(cid+'st').textContent='✅ 生成完成！';
+        // 缓存场景图，供 Veo 视频生成时作为首帧使用
+        sceneImgCache[i]={b64:imgB64,mime:imgMime,dataUrl};
+        document.getElementById(cid+'st').textContent='✅ 生成完成！已缓存为首帧';
         document.getElementById(cid+'bd').innerHTML=
           `<img src="${dataUrl}" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:8px;display:block">
-           <a href="${dataUrl}" download="scene_${shot.id||i+1}.${ext}" style="color:var(--ac2);font-size:12px;margin-top:6px;display:inline-block">⬇ 下载场景图</a>
-           <span style="font-size:11px;color:var(--t2);margin-left:12px">${shot.description?.substring(0,40)||''}...</span>`;
+           <div style="display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap">
+             <a href="${dataUrl}" download="scene_${shot.id||i+1}.${ext}" style="color:var(--ac2);font-size:12px">⬇ 下载场景图</a>
+             <span style="font-size:11px;color:var(--green);background:rgba(46,194,126,0.1);padding:2px 10px;border-radius:8px">✅ 已设为第${i+1}个镜头的Veo首帧</span>
+           </div>`;
       }else{
         document.getElementById(cid+'st').textContent='⚠️ 无图片输出';
         document.getElementById(cid+'bd').textContent='Nano Banana Pro 未返回图片，请重试';
@@ -798,6 +974,10 @@ async function genSceneImages(){
   }
 
   btn.disabled=false;btn.innerHTML='<span>🖼️</span><span>只生成场景图</span>';
+  // 更新缓存状态提示
+  const cached=Object.keys(sceneImgCache).length;
+  const cs=document.getElementById('cacheStatus');
+  if(cs&&cached>0){cs.style.display='block';cs.textContent=`✅ 已缓存 ${cached} 张场景图，点「开始生成视频」时将直接用缓存图作为 Veo 首帧`;}
 }
 
 function hasProdImgFn(){return productImgB64&&productImgB64.length>0;}
@@ -853,28 +1033,36 @@ async function genOneVideo(shot,idx,style,portrait){
   try{
     // Step 1: Nano Banana 2 生成首帧
     setSt('🖼️ Nano Banana 2 生成首帧...','');
-    const nbParts = hasProdImg
-      ? [{inlineData:{mimeType:productImgMime,data:productImgB64}},{text:`Based on this product image, generate a photorealistic scene: ${imgPrompt}. Keep the product appearance exactly the same.`}]
-      : [{text:`Generate a photorealistic image: ${imgPrompt}`}];
-    const imgR=await callProxy({
-      __gemini:true,
-      model:'gemini-3-pro-image-preview',
-      body:{
-        contents:[{parts:nbParts}],
-        generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
-      }
-    });
+    // 优先用已缓存的场景图作为首帧（来自「只生成场景图」步骤）
     let imgB64=null,imgMime='image/png';
-    for(const p of imgR.candidates?.[0]?.content?.parts||[]){
-      if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}
-    }
-    let bHtml='';
-    if(imgB64){
-      bHtml=`<img src="data:${imgMime};base64,${imgB64}" style="width:${portrait?'100px':'180px'};height:${portrait?'178px':'101px'};object-fit:cover;border-radius:8px;margin-bottom:10px;display:block">`;
-      setSt('✅ 首帧完成，Veo 3.1 生成视频...',bHtml);
+    const cached=sceneImgCache[idx];
+    if(cached){
+      imgB64=cached.b64;imgMime=cached.mime;
+      setSt('✅ 使用已缓存场景图作为首帧',`<img src="${cached.dataUrl}" style="width:${portrait?'100px':'180px'};height:${portrait?'178px':'101px'};object-fit:cover;border-radius:8px;margin-bottom:10px;display:block"><div style="font-size:11px;color:var(--green);margin-bottom:8px">✅ 来自「生成场景图」步骤</div>`);
     } else {
-      setSt('⚠️ 首帧失败，直接文生视频...','');
+      // 没有缓存，实时生成首帧
+      setSt('🖼️ Nano Banana Pro 生成首帧...','');
+      const nbParts = hasProdImgFn()
+        ? [{inlineData:{mimeType:productImgMime,data:productImgB64}},{text:`Based on this product image, generate a photorealistic scene: ${imgPrompt}. Keep the product appearance exactly the same.`}]
+        : [{text:`Generate a photorealistic image: ${imgPrompt}`}];
+      const imgR=await callProxy({
+        __gemini:true,
+        model:'gemini-3-pro-image-preview',
+        body:{
+          contents:[{parts:nbParts}],
+          generationConfig:{responseModalities:['TEXT','IMAGE'],candidateCount:1}
+        }
+      });
+      for(const p of imgR.candidates?.[0]?.content?.parts||[]){
+        if(p.inlineData?.mimeType?.startsWith('image/')){imgB64=p.inlineData.data;imgMime=p.inlineData.mimeType;break;}
+      }
+      if(imgB64){
+        setSt('✅ 首帧完成，Veo 3.1 生成视频...',`<img src="data:${imgMime};base64,${imgB64}" style="width:${portrait?'100px':'180px'};height:${portrait?'178px':'101px'};object-fit:cover;border-radius:8px;margin-bottom:10px;display:block">`);
+      } else {
+        setSt('⚠️ 首帧失败，直接文生视频...','');
+      }
     }
+    let bHtml=document.getElementById(cid+'bd')?.innerHTML||'';
 
     // Step 2: Veo 3.1 生成视频
     // 正确格式：instances + parameters（来自模型列表的 predictLongRunning 接口）
@@ -1003,7 +1191,7 @@ function switchTab(t){
     document.getElementById('tab-'+id).style.display=id===t?'block':'none';
   });
   if(t==='mat')setTimeout(initMat,50);
-  if(t==='video')updateGStatus();
+  if(t==='video'){updateGStatus();updateYwStatus();}
 }
 function jumpTo(i){
   switchTab('script');
@@ -1039,6 +1227,7 @@ function needKey(){
 // 显示已保存的Key（脱敏）
 if(getAKey()){const i=document.getElementById('kiClaude');if(i)i.value=getAKey().substring(0,8)+'••••••••';}
 if(getGKey()){const i=document.getElementById('kiGemini');if(i)i.value=getGKey().substring(0,8)+'••••••••';}
+updateYwStatus();
 </script>
 </body>
 </html>
