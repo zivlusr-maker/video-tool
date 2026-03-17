@@ -734,7 +734,7 @@ function getProductDetailStr(){
   return parts.join('、');
 }
 
-async async function genScriptEnhanced(){
+async function genScriptEnhanced(){
   const name=document.getElementById('pName').value.trim();
   if(!name){alert('请输入产品名称');return;}
   const detail=getProductDetailStr();
