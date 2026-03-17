@@ -116,6 +116,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .expbtn{display:flex;align-items:center;gap:12px;width:100%;background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:16px 20px;cursor:pointer;transition:all .2s;margin-bottom:10px;color:var(--t);font-size:14px;font-weight:600;text-align:left}
 .expbtn:hover{border-color:var(--b2);background:var(--bg3)}
 .eicon{font-size:20px;flex-shrink:0}.edesc{font-size:12px;color:var(--t2);font-weight:400;margin-top:2px}
+.cross-btn{border:1px solid var(--b2);background:var(--bg2);color:var(--t2);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cross-btn:hover{border-color:var(--ac);color:var(--ac2)}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
@@ -125,7 +127,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v13</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v15</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -219,11 +221,48 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="aiform">
         <label class="flbl">产品名称 *</label>
         <input class="finp" type="text" id="pName" placeholder="例如：有机棉婴儿连体衣...">
+
+        <label class="flbl">产品视觉细节 <span style="color:var(--green);font-size:11px">↑ 填写越详细，视频里产品越准确</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:var(--t2);margin-bottom:5px">颜色/色号</div>
+            <input class="finp" id="pColor" placeholder="例如：藏青色、米白色、#3D5A80" style="margin-bottom:0">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--t2);margin-bottom:5px">材质/面料</div>
+            <input class="finp" id="pMaterial" placeholder="例如：100%有机棉、GOTS认证" style="margin-bottom:0">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--t2);margin-bottom:5px">款式/外观</div>
+            <input class="finp" id="pStyle2" placeholder="例如：连体衣、V领、侧开扣" style="margin-bottom:0">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--t2);margin-bottom:5px">尺寸/规格</div>
+            <input class="finp" id="pSize" placeholder="例如：0-3个月、NB码" style="margin-bottom:0">
+          </div>
+        </div>
+
         <label class="flbl">核心卖点（换行分隔）</label>
         <textarea class="ftxa" id="pPoints" placeholder="例如：&#10;- GOTS有机棉认证&#10;- 磁吸扣10秒穿好"></textarea>
+
         <label class="flbl" style="margin-top:14px">目标用户</label>
-        <input class="finp" id="pAud" placeholder="例如：美国25-35岁中高端妈妈" style="margin-bottom:0">
-        <button class="gbtn" id="genBtn" onclick="genScript()"><span>✨</span><span>AI生成新脚本</span></button>
+        <input class="finp" id="pAud" placeholder="例如：美国25-35岁中高端妈妈">
+
+        <label class="flbl">跨品类参考改编 <span style="color:var(--t2);font-size:11px;font-weight:400">— 用其他品类的爆款逻辑改编你的产品脚本</span></label>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="crossCatBtns">
+          <button class="cross-btn" data-cat="" onclick="setCrossCat(this,'')" style="background:rgba(79,110,247,0.15);color:var(--ac2);border:1px solid rgba(79,110,247,0.4)">🎯 同品类（默认）</button>
+          <button class="cross-btn" data-cat="skincare" onclick="setCrossCat(this,'skincare')">💆 护肤品逻辑</button>
+          <button class="cross-btn" data-cat="food" onclick="setCrossCat(this,'food')">🍼 食品/营养品逻辑</button>
+          <button class="cross-btn" data-cat="tech" onclick="setCrossCat(this,'tech')">📱 科技产品逻辑</button>
+          <button class="cross-btn" data-cat="fashion" onclick="setCrossCat(this,'fashion')">👗 时尚服装逻辑</button>
+          <button class="cross-btn" data-cat="home" onclick="setCrossCat(this,'home')">🏠 家居用品逻辑</button>
+        </div>
+        <div id="crossCatDesc" style="display:none;font-size:12px;color:var(--gold);background:rgba(240,168,50,0.08);padding:8px 12px;border-radius:8px;margin-bottom:14px"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="gbtn" id="genBtn" onclick="genScript()"><span>✨</span><span>AI生成新脚本</span></button>
+          <button class="gbtn" onclick="genScriptEnhanced()" style="background:linear-gradient(135deg,#2ec27e,#0ea5e9)"><span>🎯</span><span>精准生成（含产品细节）</span></button>
+        </div>
       </div>
       <div class="aiout" id="aiOut">
         <div class="aohdr"><div class="aotitle">🎬 AI改编脚本</div><button class="copyall" onclick="copyAll()">📋 复制全部</button></div>
@@ -605,7 +644,7 @@ async function startAnalysis(file){
 }
 
 function buildPrompt(n,dur){
-  return `你是专业短视频内容策划师。分析这${n}个关键帧（总时长约${dur.toFixed(0)}秒），只返回JSON，不要任何额外文字：\n{"metrics":{"firstAppear":5.2,"productDuration":8.0,"productRatio":24,"totalDuration":${dur.toFixed(1)},"shotCount":${n}},"tip":"一句优化建议","shots":[{"id":1,"startTime":0,"endTime":4.5,"type":"痛点放大","description":"2-3句画面描述","copywriting":"口播文案"}]}\n镜头类型只能用：痛点放大、产品展示、使用场景、效果对比、行动引导、节日特写、钩子开场。生成全部${n}个镜头，时间连续且总和等于${dur.toFixed(1)}秒。`;
+  return `你是专业短视频内容策划师。分析这${n}个关键帧（总时长约${dur.toFixed(0)}秒），只返回JSON，不要任何额外文字：\n{"metrics":{"firstAppear":5.2,"productDuration":8.0,"productRatio":24,"totalDuration":${dur.toFixed(1)},"shotCount":${n}},"tip":"一句优化建议","shots":[{"id":1,"startTime":0,"endTime":4.5,"type":"痛点放大","description":"2-3句画面描述","copywriting":"English voiceover copy"}]}\n镜头类型只能用：痛点放大、产品展示、使用场景、效果对比、行动引导、节日特写、钩子开场。生成全部${n}个镜头，时间连续且总和等于${dur.toFixed(1)}秒。`;
 }
 
 function mockData(n,dur){
@@ -661,6 +700,78 @@ function renderResults(d){
 // ============================================================
 // AI 改编脚本
 // ============================================================
+let crossCat='';
+const CROSS_PROMPTS={
+  skincare:'用护肤品广告逻辑：开头展示皮肤/肌肤问题痛点，中间展示成分/认证建立信任，结尾展示使用效果对比，CTA强调功效',
+  food:'用食品/营养品广告逻辑：开头展示孩子/家人需求，中间展示成分安全认证，强调真实自然，画面温馨',
+  tech:'用科技产品广告逻辑：开头展示使用痛点，中间特写展示技术亮点，数据化呈现效果，强调解决方案',
+  fashion:'用时尚服装广告逻辑：开头展示穿搭场景，强调颜值和搭配，多角度展示，让孩子/用户更好看',
+  home:'用家居用品广告逻辑：展示生活场景融入感，强调便利性，真实家庭环境，情感共鸣结尾',
+};
+function setCrossCat(btn,cat){
+  crossCat=cat;
+  document.querySelectorAll('.cross-btn').forEach(b=>{
+    const on=b.dataset.cat===cat;
+    b.style.background=on?'rgba(79,110,247,0.15)':'var(--bg2)';
+    b.style.color=on?'var(--ac2)':'var(--t2)';
+    b.style.borderColor=on?'rgba(79,110,247,0.4)':'var(--b2)';
+  });
+  const desc=document.getElementById('crossCatDesc');
+  if(cat&&CROSS_PROMPTS[cat]){desc.style.display='block';desc.textContent='💡 改编方向：'+CROSS_PROMPTS[cat];}
+  else desc.style.display='none';
+}
+
+function getProductDetailStr(){
+  const color=document.getElementById('pColor')?.value.trim()||'';
+  const material=document.getElementById('pMaterial')?.value.trim()||'';
+  const style2=document.getElementById('pStyle2')?.value.trim()||'';
+  const size=document.getElementById('pSize')?.value.trim()||'';
+  const parts=[];
+  if(color)parts.push('颜色:'+color);
+  if(material)parts.push('材质:'+material);
+  if(style2)parts.push('款式:'+style2);
+  if(size)parts.push('尺寸:'+size);
+  return parts.join('、');
+}
+
+async async function genScriptEnhanced(){
+  const name=document.getElementById('pName').value.trim();
+  if(!name){alert('请输入产品名称');return;}
+  const detail=getProductDetailStr();
+  if(!detail){alert('请至少填写一项产品视觉细节（颜色/材质/款式/尺寸），这样生成的视频描述会更准确');return;}
+  const pts=document.getElementById('pPoints').value.trim();
+  const aud=document.getElementById('pAud').value.trim();
+  const btn=document.querySelector('button[onclick="genScriptEnhanced()"]');
+  if(btn){btn.disabled=true;btn.innerHTML='<span>⏳</span><span>精准生成中...</span>';}
+  const struct=appData.shots.map(s=>`镜头${s.id}[${s.type},${(s.endTime-s.startTime).toFixed(1)}秒]`).join('、');
+  const crossInstruction=crossCat&&CROSS_PROMPTS[crossCat]?`\n跨品类改编方向：${CROSS_PROMPTS[crossCat]}`:'';
+  try{
+    const data=await callAI({model:'claude-opus-4-5',max_tokens:2500,messages:[{role:'user',content:
+      `你是顶级短视频脚本策划师，专注产品视频的画面精准度。
+原视频结构：${struct}
+产品名称：${name}
+产品视觉细节（必须体现在画面描述中）：${detail}
+核心卖点：${pts||'请根据产品名推测'}
+目标用户：${aud||'普通消费者'}${crossInstruction}
+
+要求：
+1. 每个镜头的"description"（画面描述）必须包含产品的具体视觉细节（颜色、材质、款式），让AI视频生成时能精确还原产品外观
+2. 画面描述和口播文案都用英文写（适合美国市场TikTok/Instagram/YouTube Shorts投放）
+3. 如有跨品类改编方向，按该方向调整脚本结构和叙事逻辑
+
+只返回JSON，不要任何额外文字：
+{"title":"脚本标题","shots":[{"id":1,"type":"类型","duration":5.0,"description":"英文画面描述，包含产品颜色材质款式等细节","copywriting":"English voiceover copy"}]}`
+    }]});
+    const txt=data.content?.[0]?.text||'';
+    const clean=txt.replace(/<thinking>[\s\S]*?<\/thinking>/g,'').replace(/```json\n?|```/g,'').trim();
+    const js=clean.indexOf('{'),je=clean.lastIndexOf('}')+1;
+    renderAI(JSON.parse(clean.substring(js,je)));
+  }catch(e){
+    alert('生成失败: '+e.message);
+  }
+  if(btn){btn.disabled=false;btn.innerHTML='<span>🎯</span><span>精准生成（含产品细节）</span>';}
+}
+
 async function genScript(){
   const name=document.getElementById('pName').value.trim();
   if(!name){alert('请输入产品名称');return;}
@@ -668,8 +779,10 @@ async function genScript(){
   const struct=appData.shots.map(s=>`镜头${s.id}[${s.type},${(s.endTime-s.startTime).toFixed(1)}秒]`).join('、');
   const pts=document.getElementById('pPoints').value.trim();
   const aud=document.getElementById('pAud').value.trim();
+  const detail2=getProductDetailStr();
+  const crossInst=crossCat&&CROSS_PROMPTS[crossCat]?`\n跨品类改编方向：${CROSS_PROMPTS[crossCat]}`:'';
   try{
-    const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:`你是顶级短视频脚本策划师。\n原视频结构：${struct}\n产品：${name}\n卖点：${pts||'请根据产品名推测'}\n用户：${aud||'普通消费者'}\n基于原视频结构生成改编脚本。只返回JSON：\n{"title":"脚本标题","shots":[{"id":1,"type":"类型","duration":5.0,"description":"画面描述","copywriting":"口播文案"}]}`}]});
+    const data=await callAI({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:`你是顶级短视频脚本策划师。\n原视频结构：${struct}\n产品：${name}${detail2?'\n产品细节：'+detail2:''}\n卖点：${pts||'请根据产品名推测'}\n用户：${aud||'普通消费者'}${crossInst}\n基于原视频结构生成改编脚本。只返回JSON：\n{"title":"脚本标题","shots":[{"id":1,"type":"类型","duration":5.0,"description":"画面描述","copywriting":"English voiceover copy"}]}`}]});
     const txt=data.content?.[0]?.text||'';
     const clean=txt.replace(/<thinking>[\s\S]*?<\/thinking>/g,'').replace(/```json\n?|```/g,'').trim();
     const js=clean.indexOf('{'),je=clean.lastIndexOf('}')+1;
@@ -833,8 +946,10 @@ async function genOneVideoYunwu(shot,i,style,size,portrait,ywKey){
       setSt('📝 纯文字生成（无参考图）','<div style="font-size:11px;color:var(--t2)">无参考图，纯文字生成...</div>');
     }
 
-    // Step2: 构建 prompt（英文，yunwu.ai 效果更好）
-    const vidPrompt=`${shot.description||''}. ${shot.copywriting?'Context: '+shot.copywriting+'.':''} ${style}. Professional product video. No text overlays.`.trim();
+    // Step2: 构建 prompt（英文+产品细节，yunwu.ai 效果更好）
+    const prodDetail=getProductDetailStr();
+    const detailEn=prodDetail?`Product details: ${prodDetail}.`:'';
+    const vidPrompt=`${shot.description||''}. ${detailEn} ${shot.copywriting?'Context: '+shot.copywriting+'.':''} ${style}. Professional product video. No text overlays.`.trim();
 
     // Step3: 提交 yunwu.ai 任务
     setSt('⚡ 提交 yunwu.ai 任务...',document.getElementById(cid+'bd')?.innerHTML||'');
