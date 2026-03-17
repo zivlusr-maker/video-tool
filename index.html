@@ -127,7 +127,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div class="hdr">
   <div class="logo">🎬</div>
-  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v15</div></div>
+  <div><div class="logo-text">爆款短视频拆解工具</div><div class="logo-sub" id="hdrSub">● AI分析引擎就绪 v16</div></div>
   <div class="hdr-r">
     <div class="mwrap">
       <button class="mbtn" id="mb-claude" onclick="setModel('claude')">Claude</button>
@@ -1070,8 +1070,10 @@ async function genSceneImages(){
         const ext=imgMime.includes('png')?'png':'jpg';
         const dataUrl=`data:${imgMime};base64,${imgB64}`;
         // 缓存场景图，供 Veo 视频生成时作为首帧使用
-        sceneImgCache[i]={b64:imgB64,mime:imgMime,dataUrl};
-        document.getElementById(cid+'st').textContent='✅ 生成完成！已缓存为首帧';
+        // 用原始镜头序号作为key，和视频生成时的 shot._idx 对应
+        const cacheKey=sel[i]!==undefined?sel[i]:i;
+        sceneImgCache[cacheKey]={b64:imgB64,mime:imgMime,dataUrl};
+        document.getElementById(cid+'st').textContent='✅ 生成完成！已缓存（key:'+cacheKey+'）';
         document.getElementById(cid+'bd').innerHTML=
           `<img src="${dataUrl}" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:8px;display:block">
            <div style="display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap">
